@@ -2808,7 +2808,7 @@
     <Optimize>False</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DebugType>None</DebugType>
+    <DebugType>none</DebugType>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>True</Optimize>
   </PropertyGroup>

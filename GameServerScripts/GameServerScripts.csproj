@@ -303,7 +303,7 @@ xcopy "$(ProjectDir)dbupdater\*.xml" "$(ProjectDir)..\$(ConfigurationName)\scrip
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
-    <DebugType>None</DebugType>
+    <DebugType>none</DebugType>
   </PropertyGroup>
   <!-- Graveen: the following is replacing the rev number in the asembly.info file by the SVN rev number of the current project. -->
   <!-- You must work on project under SVN version control, have msbuild community tasks assemblies installed and subversion client -->
