@@ -175,6 +175,11 @@ namespace DOL.GS
 		/// <summary>
 		/// Gets the server Scheduler
 		/// </summary>
+		public ClientData.ClientDataManager ClientData { get; protected set; }
+		
+		/// <summary>
+		/// Gets the server Scheduler
+		/// </summary>
 		public Scheduler.SimpleScheduler Scheduler { get; protected set; }
 		
 		/// <summary>
@@ -627,6 +632,10 @@ namespace DOL.GS
 				 */
 
 				//---------------------------------------------------------------
+				//Try to initialize the Client Data Manager
+				if (!InitComponent(() => ClientData = new ClientData.ClientDataManager(this), "Client Data Initialization"))
+					return false;
+				//---------------------------------------------------------------
 				//Try to initialize the Scheduler
 				if (!InitComponent(() => Scheduler = new Scheduler.SimpleScheduler(), "Scheduler Initialization"))
 					return false;
@@ -779,7 +788,7 @@ namespace DOL.GS
 
 				//---------------------------------------------------------------
 				//Notify our scripts that everything went fine!
-				GameEventMgr.Notify(ScriptEvent.Loaded);
+				GameEventMgr.Notify(ScriptEvent.Loaded, this);
 
 				//---------------------------------------------------------------
 				//Set the GameServer StartTick

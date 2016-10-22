@@ -2387,6 +2387,7 @@ namespace DOL.GS.Commands
 			text.Add("  - Craftingskill : " + player.CraftingPrimarySkill + "");
 			text.Add("  - Money : " + Money.GetString(player.GetCurrentMoney()) + "");
 			text.Add("  - Model ID : " + player.Model);
+			text.Add("  - IsUnderWater : " + player.IsUnderwater);
 			text.Add("  - Region OID : " + player.ObjectID);
 			text.Add("  - AFK Message: " + player.TempProperties.getProperty<string>(GamePlayer.AFK_MESSAGE) + "");
 			text.Add(" ");

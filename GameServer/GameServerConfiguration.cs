@@ -61,6 +61,11 @@ namespace DOL.GS
 		protected bool m_enableCompilation;
 
 		/// <summary>
+		/// Local Client Dir Path
+		/// </summary>
+		protected string m_clientDirPath = "";
+
+		/// <summary>
 		/// True if the server shall automatically create accounts
 		/// </summary>
 		protected bool m_autoAccountCreation;
@@ -154,6 +159,7 @@ namespace DOL.GS
 			m_scriptCompilationTarget = root["Server"]["ScriptCompilationTarget"].GetString(m_scriptCompilationTarget);
 			m_scriptAssemblies = root["Server"]["ScriptAssemblies"].GetString(m_scriptAssemblies);
 			m_enableCompilation = root["Server"]["EnableCompilation"].GetBoolean(true);
+			m_clientDirPath = root["Server"]["ClientDirPath"].GetString(m_clientDirPath);
 			m_autoAccountCreation = root["Server"]["AutoAccountCreation"].GetBoolean(m_autoAccountCreation);
 
 			string serverType = root["Server"]["GameType"].GetString("Normal");
@@ -256,6 +262,7 @@ namespace DOL.GS
 
 			root["Server"]["ScriptCompilationTarget"].Set(m_scriptCompilationTarget);
 			root["Server"]["ScriptAssemblies"].Set(m_scriptAssemblies);
+			root["Server"]["ClientDirPath"].Set(m_clientDirPath);
 			root["Server"]["EnableCompilation"].Set(m_enableCompilation);
 			root["Server"]["AutoAccountCreation"].Set(m_autoAccountCreation);
 
@@ -440,6 +447,15 @@ namespace DOL.GS
 		{
 			get { return m_enableCompilation; }
 			set { m_enableCompilation = value; }
+		}
+
+		/// <summary>
+		/// Get or Set the Local Client Dir Path
+		/// </summary>
+		public string ClientDirPath
+		{
+			get { return m_clientDirPath; }
+			set { m_clientDirPath = value; }
 		}
 
 		/// <summary>

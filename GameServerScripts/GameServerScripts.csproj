@@ -155,6 +155,8 @@
     <Compile Include="gameevents\XMLWebUIGenerator.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="manager\ClientRiverManager.cs" />
+    <Compile Include="manager\ClientRiverManagerLoader.cs" />
     <Compile Include="quests\Albion\AFewRepairs.cs" />
     <Compile Include="quests\Albion\AfterTheAccident.cs" />
     <Compile Include="quests\Albion\AgainstTheGrain.cs" />
@@ -276,6 +278,7 @@
     <Folder Include="dbupdater\insert" />
     <Folder Include="dbupdater\replace" />
     <Folder Include="dbupdater\unload" />
+    <Folder Include="manager" />
     <Folder Include="titles" />
     <Folder Include="startup" />
     <Folder Include="startup\command" />

@@ -18,6 +18,8 @@
  */
 using System;
 
+using DOL.GS.Rivers;
+
 namespace DOL.GS
 {
 	/// <summary>
@@ -36,6 +38,11 @@ namespace DOL.GS
 		public WeatherManager WeatherManager { get; private set; }
 		
 		/// <summary>
+		/// Reference to the World River Manager
+		/// </summary>
+		public IRiverManager RiverManager { get; private set; }
+		
+		/// <summary>
 		/// Create a new instance of <see cref="WorldManager"/>
 		/// </summary>
 		public WorldManager(GameServer GameServerInstance)
@@ -46,6 +53,16 @@ namespace DOL.GS
 			this.GameServerInstance = GameServerInstance;
 			
 			WeatherManager = new WeatherManager(this.GameServerInstance.Scheduler);
+			RiverManager = new RiverManager();
+		}
+		
+		/// <summary>
+		/// Change River Manager with another Implementation
+		/// </summary>
+		/// <param name="RiverManager">new River Manager Implementation</param>
+		public void ChangeRiverManager(IRiverManager RiverManager)
+		{
+			this.RiverManager = RiverManager;
 		}
 	}
 }
