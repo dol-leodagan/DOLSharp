@@ -839,7 +839,7 @@ namespace DOL.GS
 		/// <returns>Registered region</returns>
 		public static Region RegisterRegion(GameTimer.TimeManager time, RegionData data)
 		{
-			Region region =  Region.Create(time, data);
+			Region region =  RegionHelper.Create(time, data);
 			m_regions.Add(data.Id, region);
 			return region;
 		}
@@ -929,7 +929,7 @@ namespace DOL.GS
                     width * 8192,
                     height * 8192);*/
 
-			region.Zones.Add(zone);
+			region.AddZone(zone);
 			
 			m_zones.AddOrReplace(zoneID, zone);
 

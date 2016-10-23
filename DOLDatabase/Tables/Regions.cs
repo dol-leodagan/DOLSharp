@@ -74,10 +74,15 @@ namespace DOL.Database
 		/// </summary>
 		private string m_classType;
 
-		/// <summary>
-		/// Should this region be treated as the Frontiers?
-		/// </summary>
-		private bool m_isFrontier;
+        /// <summary>
+        /// Should this region be treated as the Frontiers?
+        /// </summary>
+        private bool m_isFrontier;
+
+        /// <summary>
+        /// Dedicated Time Manager (for highly active Regions)
+        /// </summary>
+        private bool m_dedicatedTimeManager;
 
         public DBRegions()
         {
@@ -92,6 +97,7 @@ namespace DOL.Database
             m_waterLevel = 0;
 			m_classType = string.Empty;
 			m_isFrontier = false;
+			m_dedicatedTimeManager = false;
         }
 
         /// <summary>
@@ -234,18 +240,38 @@ namespace DOL.Database
 			}
 		}
 
+        /// <summary>
+        /// Should the keep manager manage keeps in this region?
+        /// </summary>
+        [DataElement(AllowDbNull = false)]
+        public bool IsFrontier
+        {
+            get { return m_isFrontier; }
+            set
+            {
+                Dirty = true;
+                m_isFrontier = value;
+            }
+        }
+        
+        /// <summary>
+        /// Dedicated Time Manager for This Region ?
+        /// </summary>
+        [DataElement(AllowDbNull = false)]
+        public bool DedicatedTimeManager
+        {
+            get { return m_dedicatedTimeManager; }
+            set
+            {
+                Dirty = true;
+                m_dedicatedTimeManager = value;
+            }
+        }
+        
 		/// <summary>
-		/// Should the keep manager manage keeps in this region?
+		/// Zones Data Attached to this Region
 		/// </summary>
-		[DataElement(AllowDbNull = false)]
-		public bool IsFrontier
-		{
-			get { return m_isFrontier; }
-			set
-			{
-				Dirty = true;
-				m_isFrontier = value;
-			}
-		}
+		[Relation(LocalField = "RegionID", RemoteField = "RegionID", AutoLoad = true, AutoDelete = false)]
+		public Zones[] Zones;
 	}
 }

@@ -17,19 +17,22 @@
  *
  */
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Reflection;
 using System.Threading;
+
 using DOL.Database;
-using DOL.GS.PacketHandler;
 using DOL.Events;
 using DOL.GS.Keeps;
 using DOL.GS.Utils;
 using DOL.GS.ServerProperties;
+
 using log4net;
+using KDSharp.KDTree;
+using KDSharp.DistanceFunctions;
 
 namespace DOL.GS
 {
@@ -42,194 +45,26 @@ namespace DOL.GS
 	/// </summary>
     public class Region
     {
+        /// <summary>
+        /// Defines a logger for this class.
+        /// </summary>
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-        #region Region Variables
-
+        #region Constructors
         /// <summary>
-        /// This is the minimumsize for object array that is allocated when
-        /// the first object is added to the region must be dividable by 32 (optimization)
+        /// Create a new instance of <see cref="Region"/>.
         /// </summary>
-        public static readonly int MINIMUMSIZE = 256;
-
-
-        /// <summary>
-        /// This holds all objects inside this region. Their index = their id!
-        /// </summary>
-        protected GameObject[] m_objects;
-
-
-        /// <summary>
-        /// Object to lock when changing objects in the array
-        /// </summary>
-        public readonly object ObjectsSyncLock = new object();
-
-        /// <summary>
-        /// This holds a counter with the absolute count of all objects that are actually in this region
-        /// </summary>
-        protected int m_objectsInRegion;
-
-        /// <summary>
-        /// Total number of objects in this region
-        /// </summary>
-        public int TotalNumberOfObjects
-        {
-            get { return m_objectsInRegion; }
-        }
-
-        /// <summary>
-        /// This array holds a bitarray
-        /// Its used to know which slots in region object array are free and what allocated
-        /// This is used to accelerate inserts a lot
-        /// </summary>
-        protected uint[] m_objectsAllocatedSlots;
-
-        /// <summary>
-        /// This holds the index of a possible next object slot
-        /// but needs further checks (basically its lastaddedobjectIndex+1)
-        /// </summary>
-        protected int m_nextObjectSlot;
-
-        /// <summary>
-        /// This holds the gravestones in this region for fast access
-        /// Player unique id(string) -> GameGraveStone
-        /// </summary>
-        protected readonly Hashtable m_graveStones;
-
-        /// <summary>
-        /// Holds all the Zones inside this Region
-        /// </summary>
-        protected readonly ReaderWriterList<Zone> m_zones;
-
-        protected object m_lockAreas = new object();
-
-        /// <summary>
-        /// Holds all the Areas inside this Region
-        /// 
-        /// ZoneID, AreaID, Area
-        ///
-        /// Areas can be registed to a reagion via AddArea
-        /// and events will be thrown if players/npcs/objects enter leave area
-        /// </summary>
-        private Dictionary<ushort, IArea> m_Areas;
-
-        protected Dictionary<ushort, IArea> Areas
-        {
-            get { return m_Areas; }
-        }
-
-        /// <summary>
-        /// Cache for zone area mapping to quickly access all areas within a certain zone
-        /// </summary>
-        protected ushort[][] m_ZoneAreas;
-
-        /// <summary>
-        /// /// Cache for number of items in m_ZoneAreas array.
-        /// </summary>
-        protected ushort[] m_ZoneAreasCount;
-
-        /// <summary>
-        /// How often shall we remove unused objects
-        /// </summary>
-        protected static readonly int CLEANUPTIMER = 60000;
-
-        /// <summary>
-        /// Contains the # of players in the region
-        /// </summary>
-        protected int m_numPlayer = 0;
-
-        /// <summary>
-        /// last relocation time
-        /// </summary>
-        private long m_lastRelocationTime = 0;
-
-        /// <summary>
-        /// The region time manager
-        /// </summary>
-        protected readonly GameTimer.TimeManager m_timeManager;
-        
-        /// <summary>
-        /// The Region Mob's Respawn Timer Collection
-        /// </summary>
-        protected readonly ConcurrentDictionary<GameNPC, int> m_mobsRespawning = new ConcurrentDictionary<GameNPC, int>();
-
-        #endregion
-
-        #region Constructor
-
-        private RegionData m_regionData;
-        public RegionData RegionData
-        {
-            get { return m_regionData; }
-            protected set { m_regionData = value; }
-        }
-
-        /// <summary>
-        /// Factory method to create regions.  Will create a region of data.ClassType, or default to Region if 
-        /// an error occurs or ClassType is not specified
-        /// </summary>
-        /// <param name="time"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public static Region Create(GameTimer.TimeManager time, RegionData data)
-        {
-            try
-            {
-                Type t = typeof(Region);
-
-                if (string.IsNullOrEmpty(data.ClassType) == false)
-                {
-                    t = Type.GetType(data.ClassType);
-
-                    if (t == null)
-                    {
-                        t = ScriptMgr.GetType(data.ClassType);
-                    }
-
-                    if (t != null)
-                    {
-                        ConstructorInfo info = t.GetConstructor(new Type[] { typeof(GameTimer.TimeManager), typeof(RegionData) });
-
-                        Region r = (Region)info.Invoke(new object[] { time, data });
-
-                        if (r != null)
-                        {
-                            // Success with requested classtype
-                            log.InfoFormat("Created Region {0} using ClassType '{1}'", r.ID, data.ClassType);
-                            return r;
-                        }
-
-                        log.ErrorFormat("Failed to Invoke Region {0} using ClassType '{1}'", r.ID, data.ClassType);
-                    }
-                    else
-                    {
-                        log.ErrorFormat("Failed to find ClassType '{0}' for region {1}!", data.ClassType, data.Id);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                log.ErrorFormat("Failed to start region {0} with requested classtype: {1}.  Exception: {2}!", data.Id, data.ClassType, ex.Message);
-            }
-
-            // Create region using default type
-            return new Region(time, data);
-        }
-
-        /// <summary>
-        /// Constructs a new empty Region
-        /// </summary>
-        /// <param name="time">The time manager for this region</param>
-        /// <param name="data">The region data</param>
+        /// <param name="time">TimeManager to which this Region is registered.</param>
+        /// <param name="data">The Region Data Configuration.</param>
         public Region(GameTimer.TimeManager time, RegionData data)
         {
-            m_regionData = data;
-            m_objects = new GameObject[0];
+            RegionData = data;
+            m_timeManager = time;
+            
+            m_objects = new GameObject[MINIMUM_OBJECT_ARRAY_SIZE];
+            m_numPlayer = 0;
             m_objectsInRegion = 0;
             m_nextObjectSlot = 0;
-            m_objectsAllocatedSlots = new uint[0];
-
-            m_graveStones = new Hashtable();
 
             m_zones = new ReaderWriterList<Zone>(1);
             m_ZoneAreas = new ushort[64][];
@@ -241,7 +76,6 @@ namespace DOL.GS
 
             m_Areas = new Dictionary<ushort, IArea>();
 
-            m_timeManager = time;
 
             List<string> list = null;
 
@@ -275,250 +109,248 @@ namespace DOL.GS
             list = ServerProperties.Properties.DISABLED_EXPANSIONS.SplitCSV(true);
             foreach (string expansion in list)
             {
-                if (expansion.ToString() == m_regionData.Expansion.ToString())
+                if (expansion.ToString() == RegionData.Expansion.ToString())
                 {
                     m_isDisabled = true;
                     break;
                 }
             }
         }
-
-
-
-        /// <summary>
-        /// What to do when the region collapses.
-        /// This is called when instanced regions need to be closed
-        /// </summary>
-        public virtual void OnCollapse()
-        {
-            //Delete objects
-            foreach (GameObject obj in m_objects)
-            {
-                if (obj != null)
-                {
-                    obj.Delete();
-                    RemoveObject(obj);
-                    obj.CurrentRegion = null;
-                }
-            }
-
-            m_objects = null;
-
-            foreach (Zone z in m_zones)
-            {
-                z.Delete();
-            }
-
-            m_zones.Clear();
-
-            m_graveStones.Clear();
-
-            DOL.Events.GameEventMgr.RemoveAllHandlersForObject(this);
-        }
-
-
         #endregion
+        
+        #region Static Default
+        /// <summary>
+        /// This is the minimumsize for object array that is allocated when
+        /// the first object is added to the region must be dividable by 32 (optimization)
+        /// </summary>
+        protected static readonly int MINIMUM_OBJECT_ARRAY_SIZE = 256;
+        
+        /// <summary>
+        /// Default Bucket Size for BSP Tree
+        /// </summary>
+        protected static readonly int TREE_DEFAULT_BUCKET_CAPACITY = 32;
+        
+        /// <summary>
+        /// Default Offset used for Region acting as Dungeon
+        /// </summary>
+        protected static readonly int DUNGEON_REGION_DEFAULT_OFFSET = 8192;
+        
+        /// <summary>
+        /// Default Zone Count used for Region acting as Dungeon
+        /// </summary>
+        protected static readonly int DUNGEON_REGION_DEFAULT_ZONECOUNT = 1;
+        #endregion
+        
+        #region GameObject Storage
+        /// <summary>
+        /// Object to lock when changing objects in the array
+        /// </summary>
+        readonly object ObjectsSyncLock = new object();
 
         /// <summary>
-        /// Handles players leaving this region via a zonepoint
+        /// This holds all objects inside this region. Their index = their id!
         /// </summary>
-        /// <param name="player"></param>
-        /// <param name="zonePoint"></param>
-        /// <returns>false to halt processing of this request</returns>
-        public virtual bool OnZonePoint(GamePlayer player, ZonePoint zonePoint)
-        {
-            return true;
-        }
+        GameObject[] m_objects;
 
-        #region Properties
-
-        public virtual bool IsRvR
+        /// <summary>
+        /// Returns a Snapshot Array of Objects in this region 
+        /// </summary>
+        public GameObject[] Objects
         {
             get
             {
-                switch (m_regionData.Id)
+                lock (ObjectsSyncLock)
                 {
-                    case 163://new frontiers
-                    case 165://cathal valley
-                    case 233://Sumoner hall
-                    case 234://1to4BG
-                    case 235://5to9BG
-                    case 236://10to14BG
-                    case 237://15to19BG
-                    case 238://20to24BG
-                    case 239://25to29BG
-                    case 240://30to34BG
-                    case 241://35to39BG
-                    case 242://40to44BG and Test BG
-                    case 244://Frontiers RvR dungeon
-                    case 249://Darkness Falls - RvR dungeon
-                    case 489://lvl5-9 Demons breach
-                        return true;
-                    default:
-                        return false;
+                    return m_objects.ToArray();
                 }
             }
         }
 
+        /// <summary>
+        /// This holds a counter with the absolute count of all objects that are actually in this region
+        /// </summary>
+        int m_objectsInRegion;
+
+        /// <summary>
+        /// Total number of objects in this region
+        /// </summary>
+        public virtual int TotalNumberOfObjects { get { return m_objectsInRegion; } }
+
+        /// <summary>
+        /// Number of players in the region
+        /// </summary>
+        int m_numPlayer;
+
+        /// <summary>
+        /// Number of players in the region
+        /// </summary>
+        public virtual int NumPlayers { get { return m_numPlayer; } }
+
+        /// <summary>
+        /// Available Region Slots
+        /// </summary>
+        readonly SortedList<int, int> AvailableSlots = new SortedList<int, int>();
+        
+        /// <summary>
+        /// This holds the highest index slot in which an object is stored.
+        /// </summary>
+        int m_nextObjectSlot;
+        #endregion
+        
+        #region Geometry Storage
+        /// <summary>
+        /// KDTree for Static Object Storage, no Translation
+        /// </summary>
+        protected readonly KDTree<GameObject> m_StaticObjectTree = new KDTree<GameObject>(new SquaredEuclideanDistanceFunction(), 3, TREE_DEFAULT_BUCKET_CAPACITY);
+        
+        /// <summary>
+        /// KDTree for Moving Object Storage, using Speed Translation and GameTimer
+        /// </summary>
+        protected readonly KDTree<GameObject> m_MovingObjectTree = new KDTree<GameObject>(new SquaredEuclideanDistanceWithTranslation(() => GameTimer.GetTickCount(), 3), 7, TREE_DEFAULT_BUCKET_CAPACITY);
+        #endregion
+        
+        #region Region Variables
+        /// <summary>
+        /// Data Object Holding Region Configuration.
+        /// </summary>
+        public RegionData RegionData { get; protected set; }
+        
+        /// <summary>
+        /// Holds all the Zones inside this Region
+        /// </summary>
+        readonly ReaderWriterList<Zone> m_zones;
+
+        /// <summary>
+        /// A snapshot of all Zones within this Region
+        /// </summary>
+        public IList<Zone> Zones { get { return m_zones.ToArray(); } }
+        
+        protected object m_lockAreas = new object();
+
+        /// <summary>
+        /// Holds all the Areas inside this Region
+        /// 
+        /// ZoneID, AreaID, Area
+        ///
+        /// Areas can be registed to a reagion via AddArea
+        /// and events will be thrown if players/npcs/objects enter leave area
+        /// </summary>
+        private Dictionary<ushort, IArea> m_Areas;
+
+        protected Dictionary<ushort, IArea> Areas
+        {
+            get { return m_Areas; }
+        }
+
+        /// <summary>
+        /// Cache for zone area mapping to quickly access all areas within a certain zone
+        /// </summary>
+        protected ushort[][] m_ZoneAreas;
+
+        /// <summary>
+        /// /// Cache for number of items in m_ZoneAreas array.
+        /// </summary>
+        protected ushort[] m_ZoneAreasCount;
+
+        /// <summary>
+        /// last relocation time
+        /// </summary>
+        private long m_lastRelocationTime;
+
+        /// <summary>
+        /// The region time manager
+        /// </summary>
+        protected readonly GameTimer.TimeManager m_timeManager;
+        
+        /// <summary>
+        /// The Region Mob's Respawn Timer Collection
+        /// </summary>
+        protected readonly ConcurrentDictionary<GameNPC, int> m_mobsRespawning = new ConcurrentDictionary<GameNPC, int>();
+
+        #endregion
+                
+        #region Region's Properties
+        /// <summary>
+        /// The Region Name eg. Region000
+        /// </summary>
+        public virtual string Name { get { return RegionData.Name; } }
+
+        /// <summary>
+        /// The Region Description eg. Cursed Forest
+        /// </summary>
+        public virtual string Description { get { return RegionData.Description; } }
+        
+        /// <summary>
+        /// The ID of the Region eg. 21
+        /// </summary>
+        public virtual ushort ID { get { return RegionData.Id; } }
+
+        /// <summary>
+        /// The Region Server IP ... for future use
+        /// </summary>
+        public string ServerIP { get { return RegionData.Ip; } }
+
+        /// <summary>
+        /// The Region Server Port ... for future use
+        /// </summary>
+        public ushort ServerPort { get { return RegionData.Port; } }
+        
+        /// <summary>
+        /// Is this Region Frontier ?
+        /// TODO: What's the use of this variable with RvR flag ??
+        /// </summary>
         public virtual bool IsFrontier
         {
-            get { return m_regionData.IsFrontier; }
-            set { m_regionData.IsFrontier = value; }
+            get { return RegionData.IsFrontier; }
+            set { RegionData.IsFrontier = value; }
         }
 
         /// <summary>
         /// Is the Region a temporary instance
         /// </summary>
-        public virtual bool IsInstance
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public virtual bool IsInstance { get { return false; } }
 
         /// <summary>
         /// Is this region a standard DAoC region or a custom server region
+        /// TODO: What's the use of this Flag ??
         /// </summary>
-        public virtual bool IsCustom
-        {
-            get
-            {
-                return false;
-            }
-        }
+        public virtual bool IsCustom { get { return false; } }
 
         /// <summary>
-        /// Gets whether this region is a dungeon or not
+        /// Gets whether this Region is a dungeon or not
         /// </summary>
         public virtual bool IsDungeon
         {
-            get
-            {
-                const int dungeonOffset = 8192;
-                const int zoneCount = 1;
-
-                if (Zones.Count != zoneCount)
-                    return false; //Dungeons only have 1 zone!
-
-                var zone = Zones[0];
-
-                if (zone.XOffset == dungeonOffset && zone.YOffset == dungeonOffset)
-                    return true; //Only dungeons got this offset
-
-                return false;
-            }
+            get { return m_zones.Count == DUNGEON_REGION_DEFAULT_ZONECOUNT && m_zones[0].XOffset == DUNGEON_REGION_DEFAULT_OFFSET && m_zones[0].YOffset == DUNGEON_REGION_DEFAULT_OFFSET; }
         }
 
         /// <summary>
-        /// Gets the # of players in the region
+        /// Get the region expansion (we use client expansion + 1)
         /// </summary>
-        public virtual int NumPlayers
-        {
-            get { return m_numPlayer; }
-        }
+        public virtual int Expansion { get { return RegionData.Expansion + 1; } }
 
         /// <summary>
-        /// The Region Name eg. Region000
+        /// Get the water level in this region
         /// </summary>
-        public virtual string Name
-        {
-            get { return m_regionData.Name; }
-        }
-        //Dinberg: Changed this to virtual, so that Instances can take a unique Name, for things like quest instances.
-
-        /// <summary>
-        /// The Regi on Description eg. Cursed Forest
-        /// </summary>
-        public virtual string Description
-        {
-            get { return m_regionData.Description; }
-        }
-        //Dinberg: Virtual, so that we can change this if need be, for quests eg 'Hermit Dinbargs Cave'
-        //or for the hell of it, eg Jordheim (Instance).
-
-        /// <summary>
-        /// The ID of the Region eg. 21
-        /// </summary>
-        public virtual ushort ID
-        {
-            get { return m_regionData.Id; }
-        }
-        //Dinberg: Changed this to virtual, so that Instances can take a unique ID.
-
-        /// <summary>
-        /// The Region Server IP ... for future use
-        /// </summary>
-        public string ServerIP
-        {
-            get { return m_regionData.Ip; }
-        }
-
-        /// <summary>
-        /// The Region Server Port ... for future use
-        /// </summary>
-        public ushort ServerPort
-        {
-            get { return m_regionData.Port; }
-        }
-
-        /// <summary>
-        /// An ArrayList of all Zones within this Region
-        /// </summary>
-        public IList<Zone> Zones
-        {
-            get { return m_zones; }
-        }
-
-        /// <summary>
-        /// Returns the object array of this region
-        /// </summary>
-        public GameObject[] Objects
-        {
-            get { return m_objects; }
-        }
-
-        /// <summary>
-        /// Gets or Sets the region expansion (we use client expansion + 1)
-        /// </summary>
-        public virtual int Expansion
-        {
-            get { return m_regionData.Expansion + 1; }
-        }
-
-        /// <summary>
-        /// Gets or Sets the water level in this region
-        /// </summary>
-        public virtual int WaterLevel
-        {
-            get { return m_regionData.WaterLevel; }
-        }
+        public virtual int WaterLevel { get { return RegionData.WaterLevel; } }
 
         /// <summary>
         /// Gets or Sets diving flag for region
         /// Note: This flag should normally be checked at the zone level
         /// </summary>
-        public virtual bool IsRegionDivingEnabled
-        {
-            get { return m_regionData.DivingEnabled; }
-        }
+        public virtual bool IsRegionDivingEnabled { get { return RegionData.DivingEnabled; } }
 
         /// <summary>
         /// Does this region contain housing?
         /// </summary>
-        public virtual bool HousingEnabled
-        {
-            get { return m_regionData.HousingEnabled; }
-        }
+        public virtual bool HousingEnabled { get { return RegionData.HousingEnabled; } }
 
         /// <summary>
         /// Should this region use the housing manager?
         /// Standard regions always use the housing manager if housing is enabled, custom regions might not.
         /// </summary>
-        public virtual bool UseHousingManager
-        {
-            get { return HousingEnabled; }
-        }
+        public virtual bool UseHousingManager { get { return HousingEnabled; } }
+        
 
         /// <summary>
         /// Gets last relocation time
@@ -602,6 +434,87 @@ namespace DOL.GS
             get { return WorldMgr.GetDayIncrement(); }
             set { }
         }
+        #endregion
+
+        #region Constructor
+
+
+
+        /// <summary>
+        /// What to do when the region collapses.
+        /// This is called when instanced regions need to be closed
+        /// </summary>
+        public virtual void OnCollapse()
+        {
+            // TODO Lock Correctly !!
+            //Delete objects
+            foreach (GameObject obj in m_objects)
+            {
+                if (obj != null)
+                {
+                    obj.Delete();
+                    RemoveObject(obj);
+                    obj.CurrentRegion = null;
+                }
+            }
+
+            m_objects = new GameObject[MINIMUM_OBJECT_ARRAY_SIZE];
+            m_objectsInRegion = 0;
+            m_numPlayer = 0;
+            m_nextObjectSlot = 0;
+            AvailableSlots.Clear();
+
+            foreach (Zone z in m_zones)
+                z.Delete();
+
+            m_zones.Clear();
+            GameEventMgr.RemoveAllHandlersForObject(this);
+        }
+
+
+        #endregion
+
+        /// <summary>
+        /// Handles players leaving this region via a zonepoint
+        /// </summary>
+        /// <param name="player"></param>
+        /// <param name="zonePoint"></param>
+        /// <returns>false to halt processing of this request</returns>
+        public virtual bool OnZonePoint(GamePlayer player, ZonePoint zonePoint)
+        {
+            return true;
+        }
+
+        #region Properties
+
+        public virtual bool IsRvR
+        {
+            get
+            {
+                switch (RegionData.Id)
+                {
+                    case 163://new frontiers
+                    case 165://cathal valley
+                    case 233://Sumoner hall
+                    case 234://1to4BG
+                    case 235://5to9BG
+                    case 236://10to14BG
+                    case 237://15to19BG
+                    case 238://20to24BG
+                    case 239://25to29BG
+                    case 240://30to34BG
+                    case 241://35to39BG
+                    case 242://40to44BG and Test BG
+                    case 244://Frontiers RvR dungeon
+                    case 249://Darkness Falls - RvR dungeon
+                    case 489://lvl5-9 Demons breach
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
 
         /// <summary>
         /// Create the appropriate GameKeep for this region
@@ -741,7 +654,7 @@ namespace DOL.GS
         public void StartRegionMgr()
         {
             m_timeManager.Start();
-            this.Notify(RegionEvent.RegionStart, this);
+            GameEventMgr.Notify(RegionEvent.RegionStart, this);
         }
 
         /// <summary>
@@ -750,7 +663,7 @@ namespace DOL.GS
         public void StopRegionMgr()
         {
             m_timeManager.Stop();
-            this.Notify(RegionEvent.RegionStop, this);
+            GameEventMgr.Notify(RegionEvent.RegionStop, this);
         }
 
         /// <summary>
@@ -761,18 +674,13 @@ namespace DOL.GS
         {
             if (count > Properties.REGION_MAX_OBJECTS)
                 count = Properties.REGION_MAX_OBJECTS;
+            
             lock (ObjectsSyncLock)
             {
-                if (m_objects.Length > count) return;
-                GameObject[] newObj = new GameObject[count];
-                Array.Copy(m_objects, newObj, m_objects.Length);
-                if (count / 32 + 1 > m_objectsAllocatedSlots.Length)
-                {
-                    uint[] slotarray = new uint[count / 32 + 1];
-                    Array.Copy(m_objectsAllocatedSlots, slotarray, m_objectsAllocatedSlots.Length);
-                    m_objectsAllocatedSlots = slotarray;
-                }
-                m_objects = newObj;
+                if (m_objects.Length >= count)
+                    return;
+                
+                Array.Resize<GameObject>(ref m_objects, count);
             }
         }
 
@@ -972,173 +880,99 @@ namespace DOL.GS
         }
 
         /// <summary>
-        /// Adds an object to the region and assigns the object an id
+        /// Adds an object to the region and assigns the object an id.
         /// </summary>
-        /// <param name="obj">A GameObject to be added to the region</param>
-        /// <returns>success</returns>
+        /// <param name="obj">A GameObject to be added to the region.</param>
+        /// <returns>True if Object Successfully added.</returns>
         internal bool AddObject(GameObject obj)
         {
-            //Thread.Sleep(10000);
             Zone zone = GetZone(obj.X, obj.Y);
             if (zone == null)
             {
                 if (log.IsWarnEnabled)
-                    log.Warn("Zone not found for Object: " + obj.Name + "(ID=" + obj.InternalID + ")");
+                    log.WarnFormat("Zone not found for Object: {0} (ID={1}) in Region {2} (ID={3})", obj.Name, obj.InternalID, Description, ID);
             }
 
-            //Assign a new id
             lock (ObjectsSyncLock)
             {
+                // Check for errors
                 if (obj.ObjectID != -1)
                 {
                     if (obj.ObjectID < m_objects.Length && obj == m_objects[obj.ObjectID - 1])
                     {
-                        log.WarnFormat("Object is already in the region ({0})", obj.ToString());
+                        log.WarnFormat("Object is already in Region {1} (ID={2}): {0}", obj, Description, ID);
                         return false;
                     }
-                    log.Warn(obj.Name + " should be added to " + Description + " but had already an OID(" + obj.ObjectID + ") => not added\n" + Environment.StackTrace);
+                    
+                    log.WarnFormat("Object: {0} (ID={1}) should be added to {2} (ID={3}) but had already an OID({4}) => not added\n{5}",
+                                   obj.Name, obj.InternalID, Description, ID, obj.ObjectID, Environment.StackTrace);
                     return false;
                 }
 
-                GameObject[] objectsRef = m_objects;
-
-                //*** optimized object management for memory saving primary but keeping it very fast - Blue ***
-
-                // find first free slot for the object
-                int objID = m_nextObjectSlot;
-                if (objID >= m_objects.Length || m_objects[objID] != null)
+                //Assign a new id
+                var index = m_nextObjectSlot;
+                var fromAvailable = false;
+                
+                var availableCount = AvailableSlots.Count;
+                if (availableCount > 0)
                 {
-
-                    // we are at array end, are there any holes left?
-                    if (m_objects.Length > m_objectsInRegion)
-                    {
-                        // yes there are some places left in current object array, try to find them
-                        // by using the bit array (can check 32 slots at once!)
-
-                        int i = m_objects.Length / 32;
-                        // INVARIANT: i * 32 is always lower or equal to m_objects.Length (integer division property)
-                        if (i * 32 == m_objects.Length)
-                        {
-                            i -= 1;
-                        }
-
-                        bool found = false;
-                        objID = -1;
-
-                        while (!found && (i >= 0))
-                        {
-                            if (m_objectsAllocatedSlots[i] != 0xffffffff)
-                            {
-                                // we found a free slot
-                                // => search for exact place
-
-                                int currentIndex = i * 32;
-                                int upperBound = (i + 1) * 32;
-                                while (!found && (currentIndex < m_objects.Length) && (currentIndex < upperBound))
-                                {
-                                    if (m_objects[currentIndex] == null)
-                                    {
-                                        found = true;
-                                        objID = currentIndex;
-                                    }
-
-                                    currentIndex++;
-                                }
-
-                                // INVARIANT: at this point, found must be true (otherwise the underlying data structure is corrupt)
-                            }
-
-                            i--;
-                        }
-                    }
-                    else
-                    { // our array is full, we must resize now to fit new objects
-
-                        if (objectsRef.Length == 0)
-                        {
-
-                            // there is no array yet, so set it to a minimum at least
-                            objectsRef = new GameObject[MINIMUMSIZE];
-                            Array.Copy(m_objects, objectsRef, m_objects.Length);
-                            objID = 0;
-
-                        }
-                        else if (objectsRef.Length >= Properties.REGION_MAX_OBJECTS)
-                        {
-
-                            // no available slot
-                            if (log.IsErrorEnabled)
-                                log.Error("Can't add new object - region '" + Description + "' is full. (object: " + obj.ToString() + ")");
-                            return false;
-
-                        }
-                        else
-                        {
-
-                            // we need to add a certain amount to grow
-                            int size = (int)(m_objects.Length * 1.20);
-                            if (size < m_objects.Length + 256)
-                                size = m_objects.Length + 256;
-                            if (size > Properties.REGION_MAX_OBJECTS)
-                                size = Properties.REGION_MAX_OBJECTS;
-                            objectsRef = new GameObject[size]; // grow the array by 20%, at least 256
-                            Array.Copy(m_objects, objectsRef, m_objects.Length);
-                            objID = m_objects.Length; // new object adds right behind the last object in old array
-
-                        }
-                        // resize the bitarray as well
-                        int diff = objectsRef.Length / 32 - m_objectsAllocatedSlots.Length;
-                        if (diff >= 0)
-                        {
-                            uint[] newBitArray = new uint[Math.Max(m_objectsAllocatedSlots.Length + diff + 50, 100)];	// add at least 100 integers, makes it resize less often, serves 3200 new objects, only 400 bytes
-                            Array.Copy(m_objectsAllocatedSlots, newBitArray, m_objectsAllocatedSlots.Length);
-                            m_objectsAllocatedSlots = newBitArray;
-                        }
-                    }
-                }
-
-                if (objID < 0)
-                {
-                    log.Warn("There was an unexpected problem while adding " + obj.Name + " to " + Description);
-                    return false;
-                }
-
-                // if we found a slot add the object
-                GameObject oidObj = objectsRef[objID];
-                if (oidObj == null)
-                {
-                    objectsRef[objID] = obj;
-                    m_nextObjectSlot = objID + 1;
-                    m_objectsInRegion++;
-                    obj.ObjectID = objID + 1;
-                    m_objectsAllocatedSlots[objID / 32] |= (uint)1 << (objID % 32);
-                    Thread.MemoryBarrier();
-                    m_objects = objectsRef;
-
-                    if (obj is GamePlayer)
-                    {
-                        ++m_numPlayer;
-                    }
-                    else
-                    {
-                        if (obj is GameGravestone)
-                        {
-                            lock (m_graveStones.SyncRoot)
-                            {
-                                m_graveStones[obj.InternalID] = obj;
-                            }
-                        }
-                    }
-
-                    return true;
+                    // Pick An Available Slot !
+                    index = AvailableSlots.Values[availableCount - 1];
+                    fromAvailable = true;
                 }
                 else
                 {
-                    // no available slot
-                    if (log.IsErrorEnabled)
-                        log.Error("Can't add new object - region '" + Description + "' (object: " + obj.ToString() + "); OID is used by " + oidObj.ToString());
+                    if (index >= m_objects.Length)
+                    {
+                        int size = (int)(m_objects.Length * 1.20);
+                        if (size < m_objects.Length + MINIMUM_OBJECT_ARRAY_SIZE)
+                            size = m_objects.Length + MINIMUM_OBJECT_ARRAY_SIZE;
+                        if (size > Properties.REGION_MAX_OBJECTS)
+                            size = Properties.REGION_MAX_OBJECTS;
+                        
+                        PreAllocateRegionSpace(size);
+                    }
+                    
+                    if (index >= m_objects.Length)
+                    {
+                        // No available slot
+                        if (log.IsErrorEnabled)
+                            log.ErrorFormat("Can't add new object - Region '{0}' (ID={1}) (Object: {2}); OID is above maximum {3} ", Description, ID, obj, index);
+                        
+                        return false;
+                    }
+                }
+                
+                if (index < 0)
+                {
+                    log.WarnFormat("There was an unexpected problem while adding Object {0} (ID={1}) to Region {2} (ID={3})", obj.Name, obj.InternalID, Description, ID);
                     return false;
                 }
+
+                // If we found a slot add the object
+                if (m_objects[index] == null)
+                {
+                    m_objects[index] = obj;
+                    
+                    if (fromAvailable)
+                        AvailableSlots.RemoveAt(availableCount - 1);
+                    else
+                        ++m_nextObjectSlot;
+                    
+                    m_objectsInRegion++;
+                    obj.ObjectID = index + 1;
+
+                    if (obj is GamePlayer)
+                        ++m_numPlayer;
+                    
+                    return true;
+                }
+                
+                // No available slot
+                if (log.IsErrorEnabled)
+                    log.ErrorFormat("Can't add new object - Region '{0}' (ID={1}) (Object: {2}); OID is used by another object: {3}", Description, ID, obj, index);
+                
+                return false;
             }
         }
 
@@ -1151,52 +985,52 @@ namespace DOL.GS
             lock (ObjectsSyncLock)
             {
                 int index = obj.ObjectID - 1;
+                
                 if (index < 0)
-                {
                     return;
-                }
 
-                if (obj is GamePlayer)
-                {
-                    --m_numPlayer;
-                }
-                else
-                {
-                    if (obj is GameGravestone)
-                    {
-                        lock (m_graveStones.SyncRoot)
-                        {
-                            m_graveStones.Remove(obj.InternalID);
-                        }
-                    }
-                }
-
-                GameObject inPlace = m_objects[obj.ObjectID - 1];
+                GameObject inPlace = m_objects[index];
+                
                 if (inPlace == null)
                 {
-                    log.Error("RemoveObject conflict! OID" + obj.ObjectID + " " + obj.Name + "(" + obj.CurrentRegionID + ") but there was no object at that slot");
-                    log.Error(new StackTrace().ToString());
+                    if (log.IsErrorEnabled)
+                        log.ErrorFormat("Region RemoveObject conflict! Object: {0} (OID={1}), was not found in slot of Region {2} (ID={3})\n{4}", obj.Name, obj.ObjectID, Description, ID, Environment.StackTrace);
                     return;
                 }
+                
                 if (obj != inPlace)
                 {
-                    log.Error("RemoveObject conflict! OID" + obj.ObjectID + " " + obj.Name + "(" + obj.CurrentRegionID + ") but there was another object already " + inPlace.Name + " region:" + inPlace.CurrentRegionID + " state:" + inPlace.ObjectState);
-                    log.Error(new StackTrace().ToString());
+                    if (log.IsErrorEnabled)
+                        log.ErrorFormat("Region RemoveObject conflict! Object: {0} (OID={1}) in Region {2} (ID={3}), there was an other object found in slot (Name: {4}, ID: {5}, State: {6})\n{7}",
+                                        obj.Name, obj.ObjectID, Description, ID, inPlace.Name, inPlace.InternalID, inPlace.ObjectState, Environment.StackTrace);
                     return;
                 }
 
-                if (m_objects[index] != obj)
+                m_objects[index] = null;
+                
+                // Remove index from valid Slot
+                if (index == m_nextObjectSlot - 1)
                 {
-                    log.Error("Object OID is already used by another object! (used by:" + m_objects[index].ToString() + ")");
+                    --m_nextObjectSlot;
+                    
+                    // Compact Object Collection
+                    while (AvailableSlots.Count > 0 && AvailableSlots.Values[0] == m_nextObjectSlot - 1)
+                    {
+                        --m_nextObjectSlot;
+                        AvailableSlots.RemoveAt(0);
+                    }
                 }
                 else
                 {
-                    m_objects[index] = null;
-                    m_nextObjectSlot = index;
-                    m_objectsAllocatedSlots[index / 32] &= ~(uint)(1 << (index % 32));
+                    AvailableSlots.Add(-index, index);
                 }
+                
                 obj.ObjectID = -1; // invalidate object id
+                
                 m_objectsInRegion--;
+                
+                if (obj is GamePlayer)
+                    --m_numPlayer;
             }
         }
 
@@ -1207,9 +1041,9 @@ namespace DOL.GS
         /// <returns>the found gravestone or null</returns>
         public GameGravestone FindGraveStone(GamePlayer player)
         {
-            lock (m_graveStones.SyncRoot)
+            lock (ObjectsSyncLock)
             {
-                return (GameGravestone)m_graveStones[player.InternalID];
+                return m_objects.OfType<GameGravestone>().FirstOrDefault(grave => grave.InternalID == player.InternalID);
             }
         }
 
@@ -1242,6 +1076,11 @@ namespace DOL.GS
             }
             return null;
         }
+        
+        /// <summary>
+        /// TODO This should probably not exists...
+        /// </summary>
+        public void AddZone(Zone Zone) { m_zones.Add(Zone); }
 
         /// <summary>
         /// Gets the X offset for the specified zone
@@ -1486,30 +1325,6 @@ namespace DOL.GS
                 }
                 return areas;
             }
-        }
-
-        #endregion
-
-        #region Notify
-
-        public virtual void Notify(DOLEvent e, object sender, EventArgs args)
-        {
-            GameEventMgr.Notify(e, sender, args);
-        }
-
-        public virtual void Notify(DOLEvent e, object sender)
-        {
-            Notify(e, sender, null);
-        }
-
-        public virtual void Notify(DOLEvent e)
-        {
-            Notify(e, null, null);
-        }
-
-        public virtual void Notify(DOLEvent e, EventArgs args)
-        {
-            Notify(e, null, args);
         }
 
         #endregion

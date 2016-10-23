@@ -65,7 +65,7 @@ namespace DOL.GS
 			StartRegionMgr();
 			BeginAutoClosureCountdown(10);
 			
-			foreach (Zone z in m_zones)
+			foreach (Zone z in Zones)
 			{
 				m_zoneSkinMap.Add(z.ZoneSkinID, z);
 			}
@@ -513,7 +513,6 @@ namespace DOL.GS
 		#endregion
 
 		#region mobcount
-
 		/// <summary>
 		/// Get an Enumerable of Mobs inside instance, Meant for mini-quest finished conditions.
 		/// Can be used to update all mobs in area depending on player levels or other conditions.
@@ -522,19 +521,16 @@ namespace DOL.GS
 		/// <returns>List of Mobs</returns>
 		public IEnumerable<GameNPC> GetMobsInsideInstance(bool alive)
 		{
-			lock(ObjectsSyncLock)
+		    // TODO Iterate over an IEnumerable instead of Snapshot.
+			if(alive)
 			{
-				if(alive)
-				{
-					return new List<GameNPC>(from regionObjects in this.Objects where (regionObjects is GameNPC) && ((((GameNPC)regionObjects).Flags & GameNPC.eFlags.PEACE) != GameNPC.eFlags.PEACE) && ((GameNPC)regionObjects).IsAlive select (GameNPC)regionObjects);
-				}
-				else
-				{
-					return new List<GameNPC>(from regionObjects in this.Objects where (regionObjects is GameNPC) && ((((GameNPC)regionObjects).Flags & GameNPC.eFlags.PEACE) != GameNPC.eFlags.PEACE) select (GameNPC)regionObjects);
-				}
+				return new List<GameNPC>(from regionObjects in this.Objects where (regionObjects is GameNPC) && ((((GameNPC)regionObjects).Flags & GameNPC.eFlags.PEACE) != GameNPC.eFlags.PEACE) && ((GameNPC)regionObjects).IsAlive select (GameNPC)regionObjects);
+			}
+			else
+			{
+				return new List<GameNPC>(from regionObjects in this.Objects where (regionObjects is GameNPC) && ((((GameNPC)regionObjects).Flags & GameNPC.eFlags.PEACE) != GameNPC.eFlags.PEACE) select (GameNPC)regionObjects);
 			}
 		}
-		
 		#endregion
     }
 }

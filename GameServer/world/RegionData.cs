@@ -63,10 +63,6 @@ namespace DOL.GS
 		/// </summary>
 		public int Expansion;
 		/// <summary>
-		/// The region mobs
-		/// </summary>
-		public Mob[] Mobs;
-		/// <summary>
 		/// The class type of this region, blank for default
 		/// </summary>
 		public string ClassType;
@@ -74,7 +70,21 @@ namespace DOL.GS
 		/// Should this region be treated as part of the Frontier?
 		/// </summary>
 		public bool IsFrontier;
+		/// <summary>
+		/// Should this region have a dedicated Time Manager?
+		/// </summary>
+		public bool DedicatedTimeManager;
 
+        /// <summary>
+        /// The region mobs
+        /// </summary>
+        public Mob[] Mobs;
+        
+        /// <summary>
+        /// The region zones
+        /// </summary>
+        public ZoneData[] Zones;
+        
 		/// <summary>
 		/// Compares 2 objects
 		/// </summary>

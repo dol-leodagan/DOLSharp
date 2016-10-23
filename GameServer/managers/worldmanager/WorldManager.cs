@@ -30,11 +30,16 @@ namespace DOL.GS
 		/// </summary>
 		private GameServer GameServerInstance { get; set; }
 
-		/// <summary>
-		/// Reference to the World Weather Manager
-		/// </summary>
-		public WeatherManager WeatherManager { get; private set; }
-		
+        /// <summary>
+        /// Reference to the World Weather Manager
+        /// </summary>
+        public WeatherManager WeatherManager { get; private set; }
+        
+        /// <summary>
+        /// Reference to the World Region Manager
+        /// </summary>
+        public RegionManager RegionManager { get; private set; }
+        
 		/// <summary>
 		/// Create a new instance of <see cref="WorldManager"/>
 		/// </summary>
@@ -46,6 +51,8 @@ namespace DOL.GS
 			this.GameServerInstance = GameServerInstance;
 			
 			WeatherManager = new WeatherManager(this.GameServerInstance.Scheduler);
+			
+			RegionManager = new RegionManager(this.GameServerInstance.IDatabase, this.GameServerInstance.Configuration.CPUUse);
 		}
 	}
 }

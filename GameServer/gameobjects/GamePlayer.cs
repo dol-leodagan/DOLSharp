@@ -1838,7 +1838,6 @@ namespace DOL.GS
 			                                                     		Out.SendMessage(LanguageMgr.GetTranslation(Client.Account.Language, "GamePlayer.Pray.GainBack"), eChatType.CT_Important, eChatLoc.CL_SystemWindow);
 			                                                     		GainExperience(eXPSource.Praying, stn.XPValue);
 			                                                     	}
-			                                                     	stn.XPValue = 0;
 			                                                     	stn.Delete();
 			                                                     });
 			m_prayAction.Start(PrayDelay);
@@ -9967,11 +9966,11 @@ namespace DOL.GS
 
 			if (regionID != CurrentRegionID)
 			{
-				GameEventMgr.Notify(GamePlayerEvent.RegionChanging, this);
+				GameEventMgr.Notify(GameLivingEvent.RegionChanging, this);
 				if (!RemoveFromWorld())
 					return false;
 				//notify event
-				CurrentRegion.Notify(RegionEvent.PlayerLeave, CurrentRegion, new RegionPlayerEventArgs(this));
+				GameEventMgr.Notify(RegionEvent.PlayerLeave, CurrentRegion, new RegionPlayerEventArgs(this));
 
 				CancelAllConcentrationEffects(true);
 				if (ControlledBrain != null)

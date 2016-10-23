@@ -75,7 +75,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 				player.Out.SendRegionColorScheme();
 				if (player.CurrentRegion != null)
 				{
-					player.CurrentRegion.Notify(RegionEvent.PlayerEnter, player.CurrentRegion, new RegionPlayerEventArgs(player));
+					GameEventMgr.Notify(RegionEvent.PlayerEnter, player.CurrentRegion, new RegionPlayerEventArgs(player));
 				}
 
 				int mobs = SendMobsAndMobEquipmentToPlayer(player);

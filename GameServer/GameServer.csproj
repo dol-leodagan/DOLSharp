@@ -63,6 +63,9 @@
     <FileAlignment>4096</FileAlignment>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="KDTree">
+      <HintPath>..\packages\KDSharp.KDTree.0.9.26\lib\net35\KDTree.dll</HintPath>
+    </Reference>
     <Reference Include="log4net">
       <HintPath>..\packages\log4net.2.0.4\lib\net45-full\log4net.dll</HintPath>
     </Reference>
@@ -935,6 +938,7 @@
     <Compile Include="managers\playermanager\FriendStatus.cs" />
     <Compile Include="managers\playermanager\InvalidNamesManager.cs" />
     <Compile Include="managers\playermanager\PlayerManager.cs" />
+    <Compile Include="managers\worldmanager\RegionManager.cs" />
     <Compile Include="managers\worldmanager\RegionWeather.cs" />
     <Compile Include="managers\worldmanager\WeatherManager.cs" />
     <Compile Include="managers\worldmanager\WorldManager.cs" />
@@ -2592,6 +2596,7 @@
     <Compile Include="world\RegionData.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="world\RegionHelper.cs" />
     <Compile Include="world\TeleportArea.cs" />
     <Compile Include="world\WorldMgr.cs">
       <SubType>Code</SubType>
