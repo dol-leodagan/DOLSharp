@@ -17,7 +17,8 @@
  *
  */
 using System;
-using System.Collections;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -26,6 +27,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
+		    //var warmapPacket = new WarmapBonusRequestPacket(packet);
+		    
 			client.Out.SendWarmapBonuses();
 		}
 	}

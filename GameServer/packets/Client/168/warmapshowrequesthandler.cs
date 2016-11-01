@@ -17,22 +17,22 @@
  *
  */
 using System;
-using System.Collections;
 
 using DOL.GS.Keeps;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.ShowWarmapRequest, "Show Warmap", eClientStatus.PlayerInGame)]
 	public class WarmapShowRequestHandler : IPacketHandler
 	{
-		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int code = packet.ReadByte();
-			int RealmMap = packet.ReadByte();
-			int keepId = packet.ReadByte();
+		    var showWarmap = new ShowWarmapRequestPacket(packet);
+		    
+			int code = showWarmap.Code;
+			int RealmMap = showWarmap.Realm;
+			int keepId = showWarmap.KeepId;
 
 			if (client == null || client.Player == null)
 				return;

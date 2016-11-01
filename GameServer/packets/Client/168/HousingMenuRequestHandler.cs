@@ -16,22 +16,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.HouseMenuRequest, "Handles housing menu requests", eClientStatus.PlayerInGame)]
 	public class HousingMenuRequestHandler : IPacketHandler
 	{
-		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
 		#region IPacketHandler Members
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int housenumber = packet.ReadShort();
-			int menuid = packet.ReadByte();
-			int flag = packet.ReadByte();
+		    var houseMenu = new HouseMenuRequestPacket(packet);
+		    
+			int housenumber = houseMenu.HouseOid;
+			int menuid = houseMenu.Code;
 
 			var house = HouseMgr.GetHouse(client.Player.CurrentRegionID, housenumber);
 			if (house == null)

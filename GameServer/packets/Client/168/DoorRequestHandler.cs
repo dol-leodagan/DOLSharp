@@ -23,6 +23,7 @@ using DOL.Database;
 using DOL.GS.Keeps;
 using DOL.GS.ServerProperties;
 using DOL.Language;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -38,9 +39,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 		/// </summary>
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			var doorID = (int) packet.ReadInt();
+		    var doorPacket = new DoorInteractPacket(packet);
+		    
+		    // TODO : Fix this Static Member !!
+			var doorID = (int)doorPacket.DoorId;
 			m_handlerDoorID = doorID;
-			var doorState = (byte) packet.ReadByte();
+			var doorState = doorPacket.State;
 			int doorType = doorID/100000000;
 
 			int radius = ServerProperties.Properties.WORLD_PICKUP_DISTANCE * 2;

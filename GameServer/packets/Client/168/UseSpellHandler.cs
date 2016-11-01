@@ -17,9 +17,11 @@
  *
  */
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -39,15 +41,20 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int flagSpeedData = packet.ReadShort();
-			int heading = packet.ReadShort();
+		    var spellPacket = client.Version >= GameClient.eClientVersion.Version172
+		        ? new UseSpellPacket_172(packet)
+		        : new UseSpellPacket(packet);
+		    
+			int flagSpeedData = spellPacket.SpeedData;
+			int heading = spellPacket.Heading;
 
-			if (client.Version > GameClient.eClientVersion.Version171)
+			var spell172 = spellPacket as UseSpellPacket_172;
+			if (spell172 != null)
 			{
-				int xOffsetInZone = packet.ReadShort();
-				int yOffsetInZone = packet.ReadShort();
-				int currentZoneID = packet.ReadShort();
-				int realZ = packet.ReadShort();
+				int xOffsetInZone = spell172.CurrentZoneX;
+				int yOffsetInZone = spell172.CurrentZoneY;
+				int currentZoneID = spell172.CurrentZoneId;
+				int realZ = spell172.CurrentZoneZ;
 
 				Zone newZone = WorldMgr.GetZone((ushort) currentZoneID);
 				if (newZone == null)
@@ -64,8 +71,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 				}
 			}
 
-			int spellLevel = packet.ReadByte();
-			int spellLineIndex = packet.ReadByte();
+			int spellLevel = spellPacket.Level;
+			int spellLineIndex = spellPacket.LineIndex;
 
 			client.Player.Heading = (ushort) (heading & 0xfff);
 

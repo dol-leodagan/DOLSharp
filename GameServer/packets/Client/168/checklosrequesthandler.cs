@@ -16,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -26,12 +29,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort checkerOID = packet.ReadShort();
-			ushort targetOID = packet.ReadShort();
-			ushort response = packet.ReadShort();
-			ushort unknow = packet.ReadShort();
+		    var checkLOS = new CheckLOSClientPacket(packet);
 
-			new HandleCheckAction(client.Player, checkerOID, targetOID, response).Start(1);
+			new HandleCheckAction(client.Player, checkLOS.SourceObjectId, checkLOS.TargetObjectId, checkLOS.Code).Start(1);
 		}
 
 		#endregion

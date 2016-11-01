@@ -24,6 +24,7 @@ using System.Reflection;
 using DOL.Database;
 using DOL.GS.Quests;
 using DOL.GS.ServerRules;
+using DOL.GS.ClientPacket;
 
 using log4net;
 
@@ -46,7 +47,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort jumpSpotID = packet.ReadShort();
+		    var jumpPacket = new JumpPointRequestPacket(packet);
+		    
+			ushort jumpSpotID = jumpPacket.JumpSpotId;
 
 			eRealm targetRealm = client.Player.Realm;
 

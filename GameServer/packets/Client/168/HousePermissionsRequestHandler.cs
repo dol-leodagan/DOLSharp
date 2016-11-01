@@ -18,6 +18,8 @@
  */
 using DOL.GS.Housing;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.HousePermissionRequest, "Handles housing permissions requests from menu", eClientStatus.PlayerInGame)]
@@ -27,8 +29,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int pid = packet.ReadShort();
-			ushort housenumber = packet.ReadShort();
+		    var permRequest = new HousePermissionRequestPacket(packet);
+			ushort housenumber = permRequest.HouseOid;
 
 			// house is null, return
 			var house = HouseMgr.GetHouse(housenumber);

@@ -16,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -29,9 +32,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int flagSpeedData = packet.ReadShort();
-			int slot = packet.ReadByte();
-			int type = packet.ReadByte();
+		    var slotPacket = new UseSlotPacket(packet);
+		    
+			int flagSpeedData = slotPacket.SpeedData;
+			int slot = slotPacket.Index;
+			int type = slotPacket.Type;
 
 			new UseSlotAction(client.Player, flagSpeedData, slot, type).Start(1);
 		}

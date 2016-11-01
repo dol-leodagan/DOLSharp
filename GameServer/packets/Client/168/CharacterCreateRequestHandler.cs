@@ -24,8 +24,8 @@ using System.Linq;
 
 using DOL.Database;
 using DOL.Events;
-using DOL.GS;
 using DOL.GS.ServerProperties;
+using DOL.GS.ClientPacket;
 
 using log4net;
 
@@ -63,7 +63,15 @@ namespace DOL.GS.PacketHandler.Client.v168
 		
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			string accountName = packet.ReadString(24);
+		    CharacterCreatePacket charPacket;
+		    if (client.Version >= GameClient.eClientVersion.Version1104)
+		        charPacket = new CharacterCreatePacket_1104(packet);
+		    else if (client.Version >= GameClient.eClientVersion.Version199)
+		        charPacket = new CharacterCreatePacket_199(packet);
+		    else
+		        charPacket = new CharacterCreatePacket(packet);
+		    
+			string accountName = charPacket.AccountName;
 
 			if (log.IsDebugEnabled)
 				log.DebugFormat("CharacterCreateRequestHandler for account {0} using version {1}", accountName, client.Version);
@@ -90,16 +98,17 @@ namespace DOL.GS.PacketHandler.Client.v168
 			
 			for (int i = 0; i < charsCount; i++)
 			{
-				var pakdata = new CreationCharacterData(packet, client);
+				//var pakdata = new CreationCharacterData(packet, client);
+				var pakdata = charPacket.Characters[i];
 				
 				// Graveen: changed the following to allow GMs to have special chars in their names (_,-, etc..)
 				var nameCheck = new Regex("^[A-Z][a-zA-Z]");
-				if (!string.IsNullOrEmpty(pakdata.CharName) && (pakdata.CharName.Length < 3 || !nameCheck.IsMatch(pakdata.CharName)))
+				if (!string.IsNullOrEmpty(pakdata.CharacterName) && (pakdata.CharacterName.Length < 3 || !nameCheck.IsMatch(pakdata.CharacterName)))
 				{
 					if ((ePrivLevel)client.Account.PrivLevel == ePrivLevel.Player)
 					{
 						if (ServerProperties.Properties.BAN_HACKERS)
-							client.BanAccount(string.Format("Autoban bad CharName '{0}'", pakdata.CharName));
+							client.BanAccount(string.Format("Autoban bad CharName '{0}'", pakdata.CharacterName));
 
 						client.Disconnect();
 						return;
@@ -109,26 +118,26 @@ namespace DOL.GS.PacketHandler.Client.v168
 				switch ((eOperation)pakdata.Operation)
 				{
 					case eOperation.Delete:
-						if (string.IsNullOrEmpty(pakdata.CharName))
+						if (string.IsNullOrEmpty(pakdata.CharacterName))
 						{
 							// Deletion in 1.104+ check for removed character.
 							needRefresh |= CheckForDeletedCharacter(accountName, client, i);
 						}
 						break;
 					case eOperation.Customize:
-						if (!string.IsNullOrEmpty(pakdata.CharName))
+						if (!string.IsNullOrEmpty(pakdata.CharacterName))
 						{
 							// Candidate for Customizing ?
-							var character = client.Account.Characters != null ? client.Account.Characters.FirstOrDefault(ch => ch.Name.Equals(pakdata.CharName, StringComparison.OrdinalIgnoreCase)) : null;
+							var character = client.Account.Characters != null ? client.Account.Characters.FirstOrDefault(ch => ch.Name.Equals(pakdata.CharacterName, StringComparison.OrdinalIgnoreCase)) : null;
 							if (character != null)
 								needRefresh |= CheckCharacterForUpdates(pakdata, client, character);
 						}
 						break;
 					case eOperation.Create:
-						if (!string.IsNullOrEmpty(pakdata.CharName))
+						if (!string.IsNullOrEmpty(pakdata.CharacterName))
 						{
 							// Candidate for Creation ?
-							var character = client.Account.Characters != null ? client.Account.Characters.FirstOrDefault(ch => ch.Name.Equals(pakdata.CharName, StringComparison.OrdinalIgnoreCase)) : null;
+							var character = client.Account.Characters != null ? client.Account.Characters.FirstOrDefault(ch => ch.Name.Equals(pakdata.CharacterName, StringComparison.OrdinalIgnoreCase)) : null;
 							if (character == null)
 								needRefresh |= CreateCharacter(pakdata, client, i);
 						}
@@ -144,123 +153,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 			}
 		}
 		
-		#region caracter creation data
-		class CreationCharacterData
-		{
-			public string CharName { get; set; }
-			public int CustomMode { get; set; }
-			public int EyeSize { get; set; }
-			public int LipSize { get; set; }
-			public int EyeColor { get; set; }
-			public int HairColor { get; set; }
-			public int FaceType { get; set; }
-			public int HairStyle { get; set; }
-			public int MoodType { get; set; }
-			public uint Operation { get; set; }
-			public int Class { get; set; }
-			public int Realm { get; set; }
-			public int Race { get; set; }
-			public int Gender { get; set; }
-			public bool SIStartLocation { get; set; }
-			public ushort CreationModel { get; set; }
-			public int Region { get; set; }
-			
-			public int Strength { get; set; }
-			public int Dexterity { get; set; }
-			public int Constitution { get; set; }
-			public int Quickness { get; set; }
-			public int Intelligence { get; set; }
-			public int Piety { get; set; }
-			public int Empathy { get; set; }
-			public int Charisma { get; set; }
-			public int NewConstitution { get; set; }
-			
-			public int ConstitutionDiff { get { return NewConstitution - Constitution; }}
-			
-			/// <summary>
-			/// Reads up ONE character iteration on the packet stream
-			/// </summary>
-			/// <param name="packet"></param>
-			/// <param name="client"></param>
-			public CreationCharacterData(GSPacketIn packet, GameClient client)
-			{
-				//unk - probably indicates customize or create (these are moved from 1.99 4 added bytes)
-				if (client.Version >= GameClient.eClientVersion.Version1104)
-					packet.ReadIntLowEndian();
-
-				CharName = packet.ReadString(24);
-				CustomMode = packet.ReadByte();
-				EyeSize = packet.ReadByte();
-				LipSize = packet.ReadByte();
-				EyeColor = packet.ReadByte();
-				HairColor = packet.ReadByte();
-				FaceType = packet.ReadByte();
-				HairStyle = packet.ReadByte();
-				packet.Skip(3);
-				MoodType = packet.ReadByte();
-				packet.Skip(8);
-				
-				Operation = packet.ReadInt();
-				var unk = packet.ReadByte();
-				
-				packet.Skip(24); //Location String
-				packet.Skip(24); //Skip class name
-				packet.Skip(24); //Skip race name
-				
-				var level = packet.ReadByte(); //not safe!
-				Class = packet.ReadByte();
-				Realm = packet.ReadByte();
-				
-				//The following byte contains
-				//1bit=start location ... in ShroudedIsles you can choose ...
-				//1bit=first race bit
-				//1bit=unknown
-				//1bit=gender (0=male, 1=female)
-				//4bit=race
-				byte startRaceGender = (byte)packet.ReadByte();
-				Race = (startRaceGender & 0x0F) + ((startRaceGender & 0x40) >> 2);
-				Gender = ((startRaceGender >> 4) & 0x01);
-				SIStartLocation = ((startRaceGender >> 7) != 0);
-
-				CreationModel = packet.ReadShortLowEndian();
-				Region = packet.ReadByte();
-				packet.Skip(1); //TODO second byte of region unused currently
-				packet.Skip(4); //TODO Unknown Int / last used?
-
-				Strength = packet.ReadByte();
-				Dexterity = packet.ReadByte();
-				Constitution = packet.ReadByte();
-				Quickness = packet.ReadByte();
-				Intelligence = packet.ReadByte();
-				Piety = packet.ReadByte();
-				Empathy = packet.ReadByte();
-				Charisma = packet.ReadByte();
-
-				packet.Skip(40); //TODO equipment
-				
-				var activeRightSlot = packet.ReadByte(); // 0x9C
-				var activeLeftSlot = packet.ReadByte(); // 0x9D
-				var siZone = packet.ReadByte(); // 0x9E
-				
-				// skip 4 bytes added in 1.99
-				if (client.Version >= GameClient.eClientVersion.Version199 && client.Version < GameClient.eClientVersion.Version1104)
-					packet.Skip(4);
-				
-				// New constitution must be read before skipping 4 bytes
-				NewConstitution = packet.ReadByte(); // 0x9F
-
-
-			}
-		}
-		#endregion
-
 		#region Create Character
-		private bool CreateCharacter(CreationCharacterData pdata, GameClient client, int accountSlot)
+		private bool CreateCharacter(CharacterCreateData pdata, GameClient client, int accountSlot)
 		{
 			Account account = client.Account;
 			var ch = new DOLCharacters();
 			ch.AccountName = account.Name;
-			ch.Name = pdata.CharName;
+			ch.Name = pdata.CharacterName;
 			
 			if (pdata.CustomMode == 0x01)
 			{
@@ -289,18 +188,18 @@ namespace DOL.GS.PacketHandler.Client.v168
 			// Set Race
 			ch.Race = pdata.Race;
 			
-			ch.CreationModel = pdata.CreationModel;
+			ch.CreationModel = pdata.Model;
 			ch.CurrentModel = ch.CreationModel;
-			ch.Region = pdata.Region;
+			ch.Region = pdata.RegionID;
 
-			ch.Strength = pdata.Strength;
-			ch.Dexterity = pdata.Dexterity;
-			ch.Constitution = pdata.Constitution;
-			ch.Quickness = pdata.Quickness;
-			ch.Intelligence = pdata.Intelligence;
-			ch.Piety = pdata.Piety;
-			ch.Empathy = pdata.Empathy;
-			ch.Charisma = pdata.Charisma;
+			ch.Strength = pdata.StatStr;
+			ch.Dexterity = pdata.StatDex;
+			ch.Constitution = pdata.StatCon;
+			ch.Quickness = pdata.StatQui;
+			ch.Intelligence = pdata.StatInt;
+			ch.Piety = pdata.StatPie;
+			ch.Empathy = pdata.StatEmp;
+			ch.Charisma = pdata.StatChr;
 			
 			// defaults
 			ch.CreationDate = DateTime.Now;
@@ -381,12 +280,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 			GameServer.Database.SaveObject(ch);
 
 			// Log creation
-			AuditMgr.AddAuditEntry(client, AuditType.Account, AuditSubtype.CharacterCreate, "", pdata.CharName);
+			AuditMgr.AddAuditEntry(client, AuditType.Account, AuditSubtype.CharacterCreate, "", pdata.CharacterName);
 
 			client.Account.Characters = null;
 
 			if (log.IsInfoEnabled)
-				log.InfoFormat("Character {0} created on Account {1}!", pdata.CharName, account);
+				log.InfoFormat("Character {0} created on Account {1}!", pdata.CharacterName, account);
 
 			// Reload Account Relations
 			GameServer.Database.FillObjectRelations(client.Account);
@@ -405,7 +304,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 		/// <param name="client">client</param>
 		/// <param name="character">db character</param>
 		/// <returns>True if character need refreshment false if no refresh needed.</returns>
-		private bool CheckCharacterForUpdates(CreationCharacterData pdata, GameClient client, DOLCharacters character)
+		private bool CheckCharacterForUpdates(CharacterCreateData pdata, GameClient client, DOLCharacters character)
 		{
 			int newModel = character.CurrentModel;
 
@@ -427,14 +326,14 @@ namespace DOL.GS.PacketHandler.Client.v168
 				if (pdata.CustomMode != 3 && client.Version >= GameClient.eClientVersion.Version189)
 				{
 					var stats = new Dictionary<eStat, int>();
-					stats[eStat.STR] = pdata.Strength; // Strength
-					stats[eStat.DEX] = pdata.Dexterity; // Dexterity
+					stats[eStat.STR] = pdata.StatStr; // Strength
+					stats[eStat.DEX] = pdata.StatDex; // Dexterity
 					stats[eStat.CON] = pdata.NewConstitution; // New Constitution
-					stats[eStat.QUI] = pdata.Quickness; // Quickness
-					stats[eStat.INT] = pdata.Intelligence; // Intelligence
-					stats[eStat.PIE] = pdata.Piety; // Piety
-					stats[eStat.EMP] = pdata.Empathy; // Empathy
-					stats[eStat.CHR] = pdata.Charisma; // Charisma
+					stats[eStat.QUI] = pdata.StatQui; // Quickness
+					stats[eStat.INT] = pdata.StatInt; // Intelligence
+					stats[eStat.PIE] = pdata.StatPie; // Piety
+					stats[eStat.EMP] = pdata.StatEmp; // Empathy
+					stats[eStat.CHR] = pdata.StatChr; // Charisma
 
 					// check for changed stats.
 					flagChangedStats |= stats[eStat.STR] != character.Strength;
@@ -507,7 +406,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 				if (pdata.CustomMode == 2) // change player customization
 				{
-					if (client.Account.PrivLevel == 1 && ((pdata.CreationModel >> 11) & 3) == 0)
+					if (client.Account.PrivLevel == 1 && ((pdata.Model >> 11) & 3) == 0)
 					{
 						if (ServerProperties.Properties.BAN_HACKERS) // Player size must be > 0 (from 1 to 3)
 						{
@@ -522,7 +421,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 					if (Properties.ALLOW_CUSTOMIZE_FACE_AFTER_CREATION)
 					{
-						if (pdata.CreationModel != character.CreationModel)
+						if (pdata.Model != character.CreationModel)
 							character.CurrentModel = newModel;
 	
 						if (log.IsInfoEnabled)

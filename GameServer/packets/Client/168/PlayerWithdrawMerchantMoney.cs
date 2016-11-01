@@ -18,10 +18,11 @@
  */
 using System;
 using System.Reflection;
-using DOL.Database;
+
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
+
 using log4net;
-using DOL.Language;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -48,6 +49,8 @@ namespace DOL.GS.PacketHandler.Client.v168
             House house = HouseMgr.GetHouse(conMerchant.HouseNumber);
             if (house == null)
                 return;
+            
+            //var withdrawPacket = new WithdrawMerchantMoneyPacket(packet);
 
 			// make sure player has permissions to withdraw from the consignment merchant
             if (!house.CanUseConsignmentMerchant(client.Player, ConsignmentPermissions.Withdraw))

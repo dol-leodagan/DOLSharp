@@ -16,8 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
 
 using DOL.Events;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -32,22 +34,20 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			var response = (byte) packet.ReadByte();
+		    var finishQuest = new FinishQuestRequestPacket(packet);
+		    
+			var response = finishQuest.Request;
 			if (response != 1) // confirm
 				return;
 
-			var countChosen = (byte) packet.ReadByte();
+			var countChosen = finishQuest.OptionalRewardCount;
 
 			var itemsChosen = new int[8];
 			for (int i = 0; i < 8; ++i)
-				itemsChosen[i] = packet.ReadByte();
+			    itemsChosen[i] = finishQuest.OptionalRewardChoice[i];
 
-			ushort data2 = packet.ReadShort(); // unknown
-			ushort data3 = packet.ReadShort(); // unknown
-			ushort data4 = packet.ReadShort(); // unknown
-
-			ushort questID = packet.ReadShort();
-			ushort questGiverID = packet.ReadShort();
+			ushort questID = finishQuest.QuestId;
+			ushort questGiverID = finishQuest.QuestGiverId;
 
 			new QuestRewardChosenAction(client.Player, countChosen, itemsChosen, questGiverID, questID).Start(1);
 		}

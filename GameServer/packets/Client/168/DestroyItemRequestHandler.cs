@@ -17,8 +17,9 @@
  *
  */
 using System;
-using System.Collections;
+
 using DOL.Database;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -27,8 +28,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			packet.Skip(4);
-			int slot = packet.ReadShort();
+		    var destroyPacket = new DestroyItemPacket(packet);
+		    
+		    // TODO : Move Logic to GameServer
+			int slot = destroyPacket.Slot;
 			InventoryItem item = client.Player.Inventory.GetItem((eInventorySlot)slot);
 			if (item != null)
 			{

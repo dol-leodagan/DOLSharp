@@ -16,8 +16,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
 using DOL.Database;
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -39,10 +42,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 		/// <returns></returns>
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int unknown = packet.ReadByte();
-			int position = packet.ReadByte();
-			int housenumber = packet.ReadShort();
-			int method = packet.ReadByte();
+		    var pickUp = new HousePlayerPickupItem(packet);
+		    
+			int position = pickUp.Index;
+			int housenumber = pickUp.HouseOid;
+			int method = pickUp.Place;
 
 			House house = HouseMgr.GetHouse(client.Player.CurrentRegionID, housenumber);
 

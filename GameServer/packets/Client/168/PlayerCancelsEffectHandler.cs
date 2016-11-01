@@ -18,6 +18,8 @@
  */
 using DOL.GS.Effects;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	/// <summary>
@@ -30,7 +32,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int effectID = packet.ReadShort();
+		    var cancelPacket = new CancelEffectPacket(packet);
+		    
+			int effectID = cancelPacket.InternalId;
 			if (client.Version <= GameClient.eClientVersion.Version1109)
 			{
 				new CancelEffectHandler(client.Player, effectID).Start(1);

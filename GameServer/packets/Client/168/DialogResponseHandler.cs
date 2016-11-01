@@ -16,10 +16,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
 
 using DOL.Events;
 using DOL.GS.Housing;
 using DOL.GS.Keeps;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -30,13 +32,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort data1 = packet.ReadShort();
-			ushort data2 = packet.ReadShort();
-			ushort data3 = packet.ReadShort();
-			var messageType = (byte) packet.ReadByte();
-			var response = (byte) packet.ReadByte();
+		    var dialogPacket = new DialogResponsePacket(packet);
 
-			new DialogBoxResponseAction(client.Player, data1, data2, data3, messageType, response).Start(1);
+			new DialogBoxResponseAction(client.Player, dialogPacket.Data1, dialogPacket.Data2, dialogPacket.Data3, dialogPacket.DialogCode, dialogPacket.Response).Start(1);
 		}
 
 		/// <summary>

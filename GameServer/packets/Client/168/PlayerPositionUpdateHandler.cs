@@ -18,16 +18,15 @@
  */
 //#define OUTPUT_DEBUG_INFO
 using System;
-using System.Collections;
-using System.Net;
 using System.Reflection;
 using System.Text;
 
 using DOL.Database;
-using DOL.Events;
 using DOL.Language;
 using DOL.GS;
 using DOL.GS.PacketHandler;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -57,6 +56,17 @@ namespace DOL.GS.PacketHandler.Client.v168
 			if ((client.Player.ObjectState != GameObject.eObjectState.Active) ||
 			    (client.ClientState != GameClient.eClientState.Playing))
 				return;
+			
+			// TODO : Change the horrible Array swapping for Multi version Packets.
+			PositionUpdatePacket updatePacket;
+            if (client.Version >= GameClient.eClientVersion.Version1112)
+                updatePacket = new PositionUpdatePacket_1112(packet);
+            else if (client.Version >= GameClient.eClientVersion.Version190)
+                updatePacket = new PositionUpdatePacket_190(packet);
+            else if (client.Version >= GameClient.eClientVersion.Version172)
+                updatePacket = new PositionUpdatePacket_172(packet);
+            else
+                updatePacket = new PositionUpdatePacket(packet);
 
 			int environmentTick = Environment.TickCount;
 			int packetVersion;
@@ -72,8 +82,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 			int oldSpeed = client.Player.CurrentSpeed;
 
 			//read the state of the player
-			packet.Skip(2); //PID
-			ushort data = packet.ReadShort();
+			ushort data = updatePacket.Status;
 			int speed = (data & 0x1FF);
 
 			//			if(!GameServer.ServerRules.IsAllowedDebugMode(client)
@@ -95,20 +104,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 			client.Player.IsStrafing = ((data & 0xe000) != 0);
 
-			int realZ = packet.ReadShort();
-			ushort xOffsetInZone = packet.ReadShort();
-			ushort yOffsetInZone = packet.ReadShort();
-			ushort currentZoneID;
-			if (packetVersion == 168)
-			{
-				currentZoneID = (ushort)packet.ReadByte();
-				packet.Skip(1); //0x00 padding for zoneID
-			}
-			else
-			{
-				currentZoneID = packet.ReadShort();
-			}
-
+			int realZ = updatePacket.CurrentZoneZ;
+			ushort xOffsetInZone = updatePacket.CurrentZoneX;
+			ushort yOffsetInZone = updatePacket.CurrentZoneY;
+			ushort currentZoneID = updatePacket.CurrentZoneId;
 
 			//Dinberg - Instance considerations.
 			//Now this gets complicated, so listen up! We have told the client a lie when it comes to the zoneID.
@@ -334,10 +333,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 				client.Player.TempProperties.setProperty(LASTCPSTICK, environmentTick);
 			}
 
-			ushort headingflag = packet.ReadShort();
+			ushort headingflag = updatePacket.Heading;
 			client.Player.Heading = (ushort)(headingflag & 0xFFF);
-			ushort flyingflag = packet.ReadShort();
-			byte flags = (byte)packet.ReadByte();
+			ushort flyingflag = updatePacket.Speed;
+			byte flags = updatePacket.Flag;
 
 			if (client.Player.X != realX || client.Player.Y != realY)
 			{

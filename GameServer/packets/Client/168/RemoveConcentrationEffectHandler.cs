@@ -16,7 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
 using DOL.GS.Effects;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -30,7 +33,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int index = packet.ReadByte();
+		    var removeConcentration = new RemoveConcentrationEffectPacket(packet);
+		    
+			int index = removeConcentration.EffectIndex;
 
 			new CancelEffectHandler(client.Player, index).Start(1);
 		}

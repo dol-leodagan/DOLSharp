@@ -17,12 +17,14 @@
  *
  */
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+
 using DOL.GS.Commands;
 using DOL.GS.RealmAbilities;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -50,13 +52,15 @@ namespace DOL.GS.PacketHandler.Client.v168
                     return;
                 }
             }
+            
+            var trainPacket = new TrainRequestPacket(packet);
 
-			uint x = packet.ReadInt();
-			uint y = packet.ReadInt();
-			int idLine = packet.ReadByte();
-			int unk = packet.ReadByte();
-			int row = packet.ReadByte();
-			int skillIndex = packet.ReadByte();
+			uint x = trainPacket.PlayerX;
+			uint y = trainPacket.PlayerY;
+			int idLine = trainPacket.LineIndex;
+			int unk = trainPacket.TrainType;
+			int row = trainPacket.Row;
+			int skillIndex = trainPacket.SkillIndex;
 
 			// idline not null so this is a Champion level training window
 			if (idLine > 0)

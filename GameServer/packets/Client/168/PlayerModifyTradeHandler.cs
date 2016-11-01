@@ -17,8 +17,10 @@
  *
  */
 using System;
-using DOL.Database;
 using System.Collections;
+
+using DOL.Database;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -27,42 +29,39 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			byte isok =(byte) packet.ReadByte();
-			byte repair =(byte) packet.ReadByte();
-			byte combine =(byte) packet.ReadByte();
-			packet.ReadByte();//unknow
+		    var tradePacket = new ModifyTradePacket(packet);
+		    
+			byte isok = tradePacket.Code;
+			byte repair = tradePacket.Repair;
+			byte combine = tradePacket.Combine;
 
 			ITradeWindow trade = client.Player.TradeWindow;
 			if (trade == null)
 				return;
-			if (isok==0)
+
+			if (isok == 0)
 			{
 				trade.CloseTrade();
 			}
-			else if(isok==1)
+			else if(isok == 1)
 			{
 				if(trade.Repairing != (repair == 1)) trade.Repairing = (repair == 1);
 				if(trade.Combine != (combine == 1)) trade.Combine = (combine == 1);
 				
 				ArrayList tradeSlots = new ArrayList(10);
-				for (int i=0;i<10;i++)
+				for (int i = 0 ; i < 10 ; i++)
 				{
-					int slotPosition = packet.ReadByte();
+				    int slotPosition = tradePacket.Slots[i];
 					InventoryItem item = client.Player.Inventory.GetItem((eInventorySlot)slotPosition);
 					if(item != null && ((item.IsDropable && item.IsTradable) || (client.Player.CanTradeAnyItem || client.Player.TradeWindow.Partner.CanTradeAnyItem)))
 					{
 						tradeSlots.Add(item);
 					}
 				}
+				
 				trade.TradeItems = tradeSlots;
 
-				packet.ReadShort();
-				
-				int[] tradeMoney = new int[5];
-				for(int i=0;i<5;i++)
-					tradeMoney[i]=packet.ReadShort();
-
-				long money = Money.GetMoney(tradeMoney[0],tradeMoney[1],tradeMoney[2],tradeMoney[3],tradeMoney[4]);
+				long money = Money.GetMoney(tradePacket.Mithril, tradePacket.Platinum, tradePacket.Gold, tradePacket.Silver, tradePacket.Copper);
 				trade.TradeMoney = money;
 				
 				trade.TradeUpdate();

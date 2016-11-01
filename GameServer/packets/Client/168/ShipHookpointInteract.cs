@@ -16,8 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
 
-using DOL.GS.Keeps;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -26,17 +27,17 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort unk1 = packet.ReadShort();
-			ushort objectOid = packet.ReadShort();
-			ushort unk2 = packet.ReadShort();
-			int slot = packet.ReadByte();
-			int flag = packet.ReadByte();
-			int currency = packet.ReadByte();
-			int unk3 = packet.ReadByte();
-			ushort unk4 = packet.ReadShort();
-			int type = packet.ReadByte();
-			int unk5 = packet.ReadByte();
-			int unk6 = packet.ReadShort();
+		    var shipHookpoint = new ShipHookPointInteractPacket(packet);
+		    
+			ushort unk1 = shipHookpoint.Unknown1;
+			ushort objectOid = shipHookpoint.ObjectOid;
+			ushort unk2 = shipHookpoint.Unknown2;
+			int slot = shipHookpoint.Slot;
+			int flag = shipHookpoint.Flag;
+			int currency = shipHookpoint.Currency;
+			int unk3 = shipHookpoint.Unknown3;
+			ushort unk4 = shipHookpoint.Unknown4;
+			uint type = shipHookpoint.Type;
 
 			if (client.Player.Steed == null || client.Player.Steed is GameBoat == false)
 				return;
@@ -64,7 +65,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 					}
 				default:
 					{
-						GameServer.KeepManager.Log.Error(string.Format("Unhandled ShipHookpointInteract client to server packet unk1 {0} objectOid {1} unk2 {2} slot {3} flag {4} currency {5} unk3 {6} unk4 {7} type {8} unk5 {9} unk6 {10}", unk1, objectOid, unk2, slot, flag, currency, unk3, unk4, type, unk5, unk6));
+						GameServer.KeepManager.Log.Error(string.Format("Unhandled ShipHookpointInteract client to server packet unk1 {0} objectOid {1} unk2 {2} slot {3} flag {4} currency {5} unk3 {6} unk4 {7} type {8}", unk1, objectOid, unk2, slot, flag, currency, unk3, unk4, type));
 						break;
 					}
 			}

@@ -19,11 +19,14 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+
 using DOL.Database;
 using DOL.GS.Housing;
 using DOL.GS.ServerProperties;
 using DOL.GS.Utils;
 using DOL.Language;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -42,15 +45,15 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			try
 			{
-				int unknow1 = packet.ReadByte(); // 1=Money 0=Item (?)
-				int slot = packet.ReadByte(); // Item/money slot
-				ushort housenumber = packet.ReadShort(); // N° of house
-				int unknow2 = (byte)packet.ReadByte();
-				_position = (byte)packet.ReadByte();
-				int method = packet.ReadByte(); // 2=Wall 3=Floor
-				int rotation = packet.ReadByte(); // garden items only
-				var xpos = (short)packet.ReadShort(); // x for inside objs
-				var ypos = (short)packet.ReadShort(); // y for inside objs.
+			    var housePlace = new HousePlaceItemPacket(packet);
+			    
+				int slot = housePlace.Index; // Item/money slot
+				ushort housenumber = housePlace.HouseOid; // N° of house
+				_position = housePlace.Position;
+				int method = housePlace.Place; // 2=Wall 3=Floor
+				int rotation = housePlace.Rotation; // garden items only
+				var xpos = (short)housePlace.X; // x for inside objs
+				var ypos = (short)housePlace.Y; // y for inside objs.
 				//Log.Info("U1: " + unknow1 + " - U2: " + unknow2);
 
 				ChatUtil.SendDebugMessage(client, string.Format("HousingPlaceItem: slot: {0}, position: {1}, method: {2}, xpos: {3}, ypos: {4}", slot, _position, method, xpos, ypos));

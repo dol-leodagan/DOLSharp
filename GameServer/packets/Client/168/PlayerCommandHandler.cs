@@ -18,6 +18,7 @@
  */
 using System;
 
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -26,15 +27,16 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			packet.Skip(8);
-			string cmdLine = packet.ReadString(255);
-			if(!ScriptMgr.HandleCommand(client, cmdLine))
+		    var command = new CommandPacket(packet);
+		    
+            var comm = command.Command;
+            
+			if(!ScriptMgr.HandleCommand(client, comm))
 			{
-				if (cmdLine[0] == '&')
-				{
-					cmdLine = '/' + cmdLine.Remove(0, 1);
-				}
-				client.Out.SendMessage("No such command ("+cmdLine+")",eChatType.CT_System,eChatLoc.CL_SystemWindow);
+			    if (comm[0] == '&')
+					comm = '/' + comm.Remove(0, 1);
+				
+				client.Out.SendMessage(string.Format("No such command ({0})", comm),eChatType.CT_System,eChatLoc.CL_SystemWindow);
 			}
 		}
 	}

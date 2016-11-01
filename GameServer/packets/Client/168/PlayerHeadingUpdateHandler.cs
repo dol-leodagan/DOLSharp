@@ -17,9 +17,10 @@
  *
  */
 using System;
-using System.Collections;
 using System.Reflection;
-using DOL.GS;
+
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -37,19 +38,24 @@ namespace DOL.GS.PacketHandler.Client.v168
 			if (client == null || client.Player == null)
 				return;
 
-			if (client.Player.ObjectState != GameObject.eObjectState.Active) return;
+			if (client.Player.ObjectState != GameObject.eObjectState.Active)
+			    return;
+			
+			// TODO : Clean the mess when broadcasting packet !
+			var headPacket = client.Version >= GameClient.eClientVersion.Version190
+			    ? new HeadingUpdatePacket_190(packet)
+			    : new HeadingUpdatePacket(packet);
 
-			ushort sessionId = packet.ReadShort(); // session ID
+			ushort sessionId = headPacket.SessionId; // session ID
 			if (client.SessionID != sessionId)
 			{
 //				GameServer.BanAccount(client, 120, "Hack sessionId", string.Format("Wrong sessionId:0x{0} in 0xBA packet (SessionID:{1})", sessionId, client.SessionID));
 				return; // client hack
 			}
 
-			ushort head = packet.ReadShort();
+			ushort head = headPacket.Heading;
 			client.Player.Heading = (ushort)(head & 0xFFF);
-			packet.Skip(1); // unknown
-			int flags = packet.ReadByte();
+			int flags = headPacket.Flag;
 //			client.Player.PetInView = ((flags & 0x04) != 0); // TODO
 			client.Player.GroundTargetInView = ((flags & 0x08) != 0);
 			client.Player.TargetInView = ((flags & 0x10) != 0);

@@ -17,11 +17,10 @@
  *
  */
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
+
 using DOL.Database;
 using DOL.GS.Effects;
 using DOL.GS.Quests;
@@ -29,6 +28,8 @@ using DOL.GS.RealmAbilities;
 using DOL.GS.Spells;
 using DOL.GS.Styles;
 using DOL.Language;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -48,16 +49,24 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			if (client == null || client.Player == null) 
 				return;
+			
+			DetailDisplayPacket detailPacket;
+			if (client.Version >= GameClient.eClientVersion.Version1112)
+			    detailPacket = new DetailDisplayPacket_1112(packet);
+			else if (client.Version >= GameClient.eClientVersion.Version186)
+			    detailPacket = new DetailDisplayPacket_186(packet);
+			else
+			    detailPacket = new DetailDisplayPacket(packet);
+			
 
-			ushort objectType = packet.ReadShort();
+			ushort objectType = detailPacket.ObjectType;
 
-			uint extraID = 0;
-			if (client.Version >= GameClient.eClientVersion.Version186)
-			{
-				extraID = packet.ReadInt();
-			}
-
-			ushort objectID = packet.ReadShort();
+            uint extraID = 0;
+			var detail186 = detailPacket as DetailDisplayPacket_186;
+			if (detail186 != null)
+			    extraID = detail186.ExtraId;
+			
+			ushort objectID = detailPacket.ObjectId;
 
 			string caption = "";
 			var objectInfo = new List<string>();

@@ -17,7 +17,8 @@
  *
  */
 using System;
-using DOL.Database;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -29,7 +30,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort ItemID = packet.ReadShort();
+		    var craftPacket = new CraftRequestPacket(packet);
+		    
+			ushort ItemID = craftPacket.Recipe;
 			client.Player.CraftItem(ItemID);
 		}
 	}

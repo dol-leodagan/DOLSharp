@@ -18,19 +18,23 @@
  */
 using System;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	/// <summary>
 	///SiegeWeaponActionHandler handler the command of player to control siege weapon
 	/// </summary>
-	[PacketHandlerAttribute(PacketHandlerType.TCP, 0xf5, "Handles Siege command Request")]
+	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.SiegeCommandRequest, "Handles Siege command Request", eClientStatus.PlayerInGame)]
 	public class SiegeWeaponActionHandler : IPacketHandler
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			packet.ReadShort();//unk
-			int action = packet.ReadByte();
-			int ammo = packet.ReadByte();//(ammo type if command = 'select ammo' ?)
+		    var siegeWeapon = new SiegeWeaponInteractPacket(packet);
+		    
+			int action = siegeWeapon.Action;
+			int ammo = siegeWeapon.AmmoIndex;//(ammo type if command = 'select ammo' ?)
+
 			if (client.Player.SiegeWeapon == null) return;
 			if (client.Player.IsStealthed)
 			{

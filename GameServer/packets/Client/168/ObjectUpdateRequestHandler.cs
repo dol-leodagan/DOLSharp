@@ -19,6 +19,8 @@
 using System;
 using System.Reflection;
 
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -33,6 +35,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
+		    //var updateRequest = new ObjectsUpdateRequestPacket(packet);
+		    
 			foreach (GameStaticItem item in client.Player.GetItemsInRadius(WorldMgr.OBJ_UPDATE_DISTANCE))
 			{
 				client.Out.SendObjectCreate(item);

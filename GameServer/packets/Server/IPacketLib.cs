@@ -182,6 +182,7 @@ namespace DOL.GS.PacketHandler
 		CryptKeyRequest = 0xF4, 			// 0x5C ^ 168
 		DestroyItemRequest = 0x80, 			// 0x28 ^ 168
 		DuplicateNameCheck = 0xCB, 			// 0x63 ^ 168
+		BadNameCheck = 0xC2,                // 0x6A ^ 168
 		EmblemDialogResponse = 0xE2, 		// 0x4A ^ 168
 		GameOpenRequest = 0xBF, 			// 0x17 ^ 168
 		HouseEdit = 0x01,					// 0xA9 ^ 168

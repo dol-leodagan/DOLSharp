@@ -17,13 +17,15 @@
  *
  */
 using System;
+using System.Reflection;
+
 using DOL.Database;
 using DOL.Events;
 using DOL.GS;
-using System.Reflection;
-using log4net;
 using DOL.Language;
-using System.Collections.Generic;
+using DOL.GS.ClientPacket;
+
+using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -36,11 +38,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			if (client.Player == null)
 				return;
+			
+			var movePacket = new MoveItemPacket(packet);
 
-			ushort id = packet.ReadShort();
-			ushort toClientSlot = packet.ReadShort();
-			ushort fromClientSlot = packet.ReadShort();
-			ushort itemCount = packet.ReadShort();
+			ushort id = movePacket.SessionId;
+			ushort toClientSlot = movePacket.ToSlot;
+			ushort fromClientSlot = movePacket.FromSlot;
+			ushort itemCount = movePacket.ItemCount;
 
 			//ChatUtil.SendDebugMessage(client, "GM: MoveItem; id=" + id.ToString() + " client fromSlot=" + fromClientSlot.ToString() + " client toSlot=" + toClientSlot.ToString() + " itemCount=" + itemCount.ToString());
 

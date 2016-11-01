@@ -18,14 +18,18 @@
  */
 using System;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.LookingForGroupFlag, "handle Change LFG flag", eClientStatus.PlayerInGame)]
 	public class LookingForAGroupFlagHandler : IPacketHandler
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
-		{  
-			byte code =(byte) packet.ReadByte();
+		{
+		    var lfgPacket = new LookingForGroupPacket(packet);
+		    
+			byte code = lfgPacket.LFGFlag;
 			switch(code)
 			{
 				case 0x01:

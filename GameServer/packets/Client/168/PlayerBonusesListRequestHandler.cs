@@ -19,8 +19,10 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using DOL.GS;
+
 using DOL.Language;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -37,8 +39,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			if (client.Player == null)
 				return;
+			
+			var bonusPacket = new BonusesListRequestPacket(packet);
 
-			int code = packet.ReadByte();
+			int code = bonusPacket.Unknown1;
 			if (code != 0)
 			{
 				if (log.IsWarnEnabled)

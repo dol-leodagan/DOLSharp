@@ -16,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -26,9 +29,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			var mode = (byte) packet.ReadByte();
-			bool userAction = packet.ReadByte() == 0;
-				// set to 0 if user pressed the button, set to 1 if client decided to stop attack
+		    var modeChange = new ChangeAttackModePacket(packet);
+		    
+			var mode = modeChange.Mode;
+			bool userAction = modeChange.UserRequest == 0;
+            // set to 0 if user pressed the button, set to 1 if client decided to stop attack
 
 			new AttackRequestHandler(client.Player, mode != 0, userAction).Start(1);
 		}

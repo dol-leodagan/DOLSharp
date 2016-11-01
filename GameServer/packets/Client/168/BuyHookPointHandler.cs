@@ -16,44 +16,43 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-
 using DOL.GS.Keeps;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
-	[PacketHandlerAttribute(PacketHandlerType.TCP,eClientPackets.BuyHookPoint, "buy hookpoint siege weapon/mob", eClientStatus.PlayerInGame)]
+	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.BuyHookPoint, "buy hookpoint siege weapon/mob", eClientStatus.PlayerInGame)]
 	public class BuyHookPointHandler : IPacketHandler
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort keepId = packet.ReadShort();
-			ushort wallId = packet.ReadShort();
-			int hookpointID = packet.ReadShort();
-            ushort itemslot = packet.ReadShort();
-			int payType = packet.ReadByte();//gold RP BP contrat???
-			int unk2 = packet.ReadByte();
-			int unk3 = packet.ReadByte();
-			int unk4 = packet.ReadByte();
-//			client.Player.Out.SendMessage("x="+unk2+"y="+unk3+"z="+unk4,eChatType.CT_Say,eChatLoc.CL_SystemWindow);
-			AbstractGameKeep keep = GameServer.KeepManager.GetKeepByID(keepId);
-			if (keep == null) return;
-			GameKeepComponent component = keep.KeepComponents[wallId] as GameKeepComponent;
-			if (component == null) return;
-			/*GameKeepHookPoint hookpoint = component.HookPoints[hookpointID] as GameKeepHookPoint;
-			if (hookpoint == null) return 1;
-			*/
+		    var buyhookpoint = new KeepBuyHookPointPacket(packet);
+			
+			var keep = GameServer.KeepManager.GetKeepByID(buyhookpoint.KeepId);
+			
+			if (keep == null)
+			    return;
+			
+			var component = keep.KeepComponents[buyhookpoint.ComponentId] as GameKeepComponent;
+			
+			if (component == null)
+			    return;
+
 			HookPointInventory inventory = null;
-			if(hookpointID > 0x80) inventory = HookPointInventory.YellowHPInventory; //oil
-			else if(hookpointID > 0x60) inventory = HookPointInventory.GreenHPInventory;//big siege
-			else if(hookpointID > 0x40) inventory = HookPointInventory.LightGreenHPInventory; //small siege
-			else if (hookpointID > 0x20) inventory = HookPointInventory.BlueHPInventory;//npc
+			
+			if(buyhookpoint.HookPointId > 0x80) inventory = HookPointInventory.YellowHPInventory; //oil
+			else if(buyhookpoint.HookPointId > 0x60) inventory = HookPointInventory.GreenHPInventory;//big siege
+			else if(buyhookpoint.HookPointId > 0x40) inventory = HookPointInventory.LightGreenHPInventory; //small siege
+			else if (buyhookpoint.HookPointId > 0x20) inventory = HookPointInventory.BlueHPInventory;//npc
 			else inventory = HookPointInventory.RedHPInventory;//guard
 
 			if (inventory != null)
 			{
-				HookPointItem item = inventory.GetItem(itemslot);
+				var item = inventory.GetItem(buyhookpoint.ItemSlot);
+				
 				if (item != null)
-					item.Invoke(client.Player, payType, component.KeepHookPoints[hookpointID] as GameKeepHookPoint, component);
+					item.Invoke(client.Player, buyhookpoint.PayType, component.KeepHookPoints[buyhookpoint.HookPointId] as GameKeepHookPoint, component);
 			}
 		}
 	}

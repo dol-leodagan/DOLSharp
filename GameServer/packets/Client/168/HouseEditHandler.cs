@@ -18,6 +18,8 @@
  */
 using System.Collections.Generic;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.HouseEdit, "Change handler for outside/inside look (houses).", eClientStatus.PlayerInGame)]
@@ -29,8 +31,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort playerID = packet.ReadShort(); // no use for that.
-
+		    var houseEdit = new HouseEditPacket(packet);
+		    
 			// house is null, return
 			var house = client.Player.CurrentHouse;
 			if(house == null)
@@ -40,8 +42,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 			var changes = new List<int>();
 			for (int i = 0; i < 10; i++)
 			{
-				int swtch = packet.ReadByte();
-				int change = packet.ReadByte();
+			    int swtch = houseEdit.Objects[i].Item1;
+				int change = houseEdit.Objects[i].Item2;
 
 				if (swtch != 255)
 				{

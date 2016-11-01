@@ -16,8 +16,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
 using DOL.Database;
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -28,10 +31,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			uint X = packet.ReadInt();
-			uint Y = packet.ReadInt();
-			ushort id = packet.ReadShort();
-			ushort item_slot = packet.ReadShort();
+		    var appraisePacket = new AppraiseItemPacket(packet);
+		    
+			uint X = appraisePacket.PlayerX;
+			uint Y = appraisePacket.PlayerY;
+			ushort id = appraisePacket.SessionId;
+			ushort item_slot = appraisePacket.Slot;
 
 			new AppraiseActionHandler(client.Player, item_slot).Start(1);
 		}

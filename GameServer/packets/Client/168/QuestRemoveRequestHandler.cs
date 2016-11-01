@@ -17,9 +17,9 @@
 *
 */
 using System;
-using System.Collections;
 
 using DOL.GS.Quests;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -28,10 +28,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort unk1 = packet.ReadShort();
-			ushort questIndex = packet.ReadShort();
-			ushort unk2 = packet.ReadShort();
-			ushort unk3 = packet.ReadShort();
+		    var removePacket = new QuestRemoveRequestPacket(packet);
+		    
+			ushort unk1 = removePacket.Request;
+			ushort questIndex = removePacket.QuestIndex;
+			ushort unk2 = removePacket.Unknown1;
+			ushort unk3 = removePacket.Unknown2;
 
 			AbstractQuest quest = null;
 

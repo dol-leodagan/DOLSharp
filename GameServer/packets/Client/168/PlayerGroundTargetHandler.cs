@@ -16,6 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.PlayerGroundTarget, "Handles Player Ground Target Settings", eClientStatus.PlayerInGame)]
@@ -25,11 +29,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			var groundX = (int) packet.ReadInt();
-			var groundY = (int) packet.ReadInt();
-			var groundZ = (int) packet.ReadInt();
-			ushort flag = packet.ReadShort();
-//			ushort unk2 = packet.ReadShort();
+		    var groundTarget = new GroundTargetPacket(packet);
+			var groundX = (int)groundTarget.X;
+			var groundY = (int)groundTarget.Y;
+			var groundZ = (int)groundTarget.Z;
+			var flag = groundTarget.Flag;
 
 			new ChangeGroundTargetHandler(client.Player, groundX, groundY, groundZ, flag).Start(1);
 		}

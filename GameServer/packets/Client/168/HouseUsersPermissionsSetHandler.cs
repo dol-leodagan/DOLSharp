@@ -16,9 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-using System.Reflection;
+using System;
+
 using DOL.GS.Housing;
-using log4net;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -29,9 +30,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int permissionSlot = packet.ReadByte();
-			int newPermissionLevel = packet.ReadByte();
-			ushort houseNumber = packet.ReadShort();
+		    var permSet = new HouseUserPermissionSetPacket(packet);
+		    
+			int permissionSlot = permSet.Index;
+			int newPermissionLevel = permSet.Level;
+			ushort houseNumber = permSet.HouseOid;
 
 			// house is null, return
 			var house = HouseMgr.GetHouse(houseNumber);

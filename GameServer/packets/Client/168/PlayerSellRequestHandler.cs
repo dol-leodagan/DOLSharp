@@ -17,8 +17,10 @@
  *
  */
 using System;
+
 using DOL.Database;
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -27,10 +29,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			uint x = packet.ReadInt();
-			uint y = packet.ReadInt();
-			ushort id = packet.ReadShort();
-			ushort item_slot = packet.ReadShort();
+		    var sellPacket = new SellItemPacket(packet);
+		    
+			uint x = sellPacket.PlayerX;
+			uint y = sellPacket.PlayerY;
+			ushort id = sellPacket.SessionId;
+			ushort item_slot = sellPacket.Slot;
 
 			if (client.Player.TargetObject == null)
 			{

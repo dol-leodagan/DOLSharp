@@ -16,8 +16,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
 using System.Reflection;
+
 using DOL.AI.Brain;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -34,9 +38,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			var aggroState = (byte) packet.ReadByte(); // 1-Aggressive, 2-Deffensive, 3-Passive
-			var walkState = (byte) packet.ReadByte(); // 1-Follow, 2-Stay, 3-GoTarg, 4-Here
-			var command = (byte) packet.ReadByte(); // 1-Attack, 2-Release
+		    var petWindow = new PetWindowPacket(packet);
+		    
+			var aggroState = petWindow.AggroState; // 1-Aggressive, 2-Deffensive, 3-Passive
+			var walkState = petWindow.WalkState; // 1-Follow, 2-Stay, 3-GoTarg, 4-Here
+			var command = petWindow.Command; // 1-Attack, 2-Release
 
 			//[Ganrod] Nidel: Animist can removed his TurretFnF without MainPet.
 			if (client.Player.TargetObject != null && command == 2 && client.Player.ControlledBrain == null &&

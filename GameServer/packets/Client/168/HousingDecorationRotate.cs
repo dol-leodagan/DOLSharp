@@ -16,7 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -27,11 +30,11 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int unk1 = packet.ReadByte();
-			int position = packet.ReadByte();
-			ushort housenumber = packet.ReadShort();
-			ushort angle = packet.ReadShort();
-			ushort unk2 = packet.ReadShort();
+		    var decoRotate = new HouseDecorationRotatePacket(packet);
+		    
+			int position = decoRotate.Index;
+			ushort housenumber = decoRotate.HouseOid;
+			ushort angle = decoRotate.Angle;
 
 			// rotation only works for inside items
 			if (!client.Player.InHouse)

@@ -18,6 +18,8 @@
  */
 using System;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.GameOpenRequest, "Checks if UDP is working for the client", eClientStatus.None)]
@@ -25,7 +27,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int flag = packet.ReadByte();
+		    var gameOpen = new GameOpenPacket(packet);
+		    
+			int flag = gameOpen.UseUDP;
+			
 			client.UdpPingTime = DateTime.Now.Ticks;
 			client.UdpConfirm = flag == 1;
 			client.Out.SendGameOpenReply();

@@ -17,29 +17,24 @@
  *
  */
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
+
 using DOL.GS.Styles;
-using log4net;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.UseSkill, "Handles Player Use Skill Request.", eClientStatus.PlayerInGame)]
 	public class UseSkillHandler : IPacketHandler
 	{
-		/// <summary>
-		/// Defines a logger for this class.
-		/// </summary>
-		private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
 		#region IPacketHandler Members
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int flagSpeedData = packet.ReadShort();
-			int index = packet.ReadByte();
-			int type = packet.ReadByte();
+		    var skillPacket = new UseSkillPacket(packet);
+			int flagSpeedData = skillPacket.SpeedData;
+			int index = skillPacket.Index;
+			int type = skillPacket.Type;
 
 			new UseSkillAction(client.Player, flagSpeedData, index, type).Start(1);
 		}

@@ -20,6 +20,7 @@ using System;
 using System.Linq;
 
 using DOL.Database;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -30,7 +31,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			string name = packet.ReadString(30);
+		    DuplicateNameCheckPacket dupCheck;
+		    if (client.Version >= GameClient.eClientVersion.Version1104)
+		        dupCheck = new DuplicateNameCheckPacket_1104(packet);
+		    else
+		        dupCheck = new DuplicateNameCheckPacket(packet);
+		    
+			string name = dupCheck.CharacterName;
 
 			var character = GameServer.Database.SelectObjects<DOLCharacters>("`Name` = @Name", new QueryParameter("@Name", name)).FirstOrDefault();
 			

@@ -17,9 +17,9 @@
  *
  */
 using System;
-using System.Collections;
 
 using DOL.GS.Keeps;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -28,10 +28,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort keepId = packet.ReadShort();
-			ushort wallId = packet.ReadShort();
-			ushort responce = packet.ReadShort();
-			int HPindex = packet.ReadShort();
+		    var keepInteract = new KeepInteractPacket(packet);
+		    
+			ushort keepId = keepInteract.KeepId;
+			ushort wallId = keepInteract.ComponentId;
+			ushort responce = keepInteract.Request;
+			int HPindex = keepInteract.HookPointId;
 
 			AbstractGameKeep keep = GameServer.KeepManager.GetKeepByID(keepId);
 

@@ -17,8 +17,9 @@
  *
  */
 using System.Reflection;
-using DOL;
-using DOL.Network;
+
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -33,11 +34,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
+		    var crashPacket = new CrashClientPacket(packet);
+		    
+		    // TODO : Fix This !
 			lock (this)
 			{
-				string dllName = packet.ReadString(16);
-				packet.Position = 0x50;
-				uint upTime = packet.ReadInt();
+			    string dllName = crashPacket.Module;
+			    uint upTime = crashPacket.Uptime;
 				string text = string.Format("Client crash ({0}) dll:{1} clientUptime:{2}sec", client.ToString(), dllName, upTime);
 				if (log.IsInfoEnabled)
 					log.Info(text);
@@ -46,7 +49,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 				{
 					log.Debug("Last client sent/received packets (from older to newer):");
 					
-					foreach (IPacket prevPak in client.PacketProcessor.GetLastPackets())
+					foreach (var prevPak in client.PacketProcessor.GetLastPackets())
 					{
 						log.Info(prevPak.ToHumanReadable());
 					}

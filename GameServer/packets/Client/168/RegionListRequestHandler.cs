@@ -18,6 +18,8 @@
  */
 using System;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.RegionListRequest, "Handles sending the region overview", eClientStatus.None)]
@@ -25,6 +27,20 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
+		    /*
+		    RegionListRequestPacket regionRequest;
+            if (client.Version >= GameClient.eClientVersion.Version183)
+                regionRequest = new RegionListRequestPacket_183(packet);
+            else if (client.Version >= GameClient.eClientVersion.Version180)
+                regionRequest = new RegionListRequestPacket_180(packet);
+            else if (client.Version >= GameClient.eClientVersion.Version174)
+                regionRequest = new RegionListRequestPacket_174(packet);
+            else if (client.Version >= GameClient.eClientVersion.Version172)
+                regionRequest = new RegionListRequestPacket_172(packet);
+            else
+                regionRequest = new RegionListRequestPacket(packet);
+            */
+		    
 			client.Out.SendRegions();
 		}
 	}

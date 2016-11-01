@@ -19,6 +19,7 @@
 using System;
 
 using DOL.Events;
+using DOL.GS.ClientPacket;
  
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -29,29 +30,18 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int packetVersion;
-			switch (client.Version)
-			{
-				case GameClient.eClientVersion.Version168:
-				case GameClient.eClientVersion.Version169:
-				case GameClient.eClientVersion.Version170:
-				case GameClient.eClientVersion.Version171:
-				case GameClient.eClientVersion.Version172:
-				case GameClient.eClientVersion.Version173:
-					packetVersion = 168;
-					break;
-				default:
-					packetVersion = 174;
-					break;
-			}
+		    CharacterSelectPacket charSelect = null;
+		    
+		    if (client.Version >= GameClient.eClientVersion.Version1104)
+		        charSelect = new CharacterSelectPacket_1104(packet);
+		    else if (client.Version >= GameClient.eClientVersion.Version190)
+		        charSelect = new CharacterSelectPacket_190(packet);
+		    else if (client.Version >= GameClient.eClientVersion.Version174)
+		        charSelect = new CharacterSelectPacket_174(packet);
+		    else
+		        charSelect = new CharacterSelectPacket(packet);
 
-			packet.Skip(4); //Skip the first 4 bytes
-			if (packetVersion == 174)
-			{
-				packet.Skip(1);
-			}
-
-			string charName = packet.ReadString(28);
+			string charName = charSelect.CharacterName;
 
 			//TODO Character handling 
 			if (charName.Equals("noname"))

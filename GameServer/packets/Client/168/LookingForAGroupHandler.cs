@@ -19,6 +19,8 @@
 using System;
 using System.Collections;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.LookingForGroup, "handle Looking for a group", eClientStatus.PlayerInGame)]
@@ -27,7 +29,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 		//rewritten by Corillian so if it doesn't work you know who to yell at ;)
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			byte grouped = (byte)packet.ReadByte();
+		    var findGroup = new FindGroupPacket(packet);
+		    
+			byte grouped = findGroup.LFGFlag;
 			ArrayList list = new ArrayList();
 			if (grouped != 0x00)
 			{

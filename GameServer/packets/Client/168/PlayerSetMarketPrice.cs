@@ -17,30 +17,23 @@
  *
  */
 using System;
-using System.Reflection;
-using DOL.Database;
-using DOL.GS.Housing;
-using log4net;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
     [PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.SetMarketPrice, "Set Market/Consignment Merchant Price.", eClientStatus.PlayerInGame)]
     public class PlayerSetMarketPriceHandler : IPacketHandler
     {
-        /// <summary>
-        /// Defines a logger for this class.
-        /// </summary>
-        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
         public void HandlePacket(GameClient client, GSPacketIn packet)
         {
             if (client == null || client.Player == null)
                 return;
+            
+            var marketPrice = new SetMarketPricePacket(packet);
 
-			int slot = packet.ReadByte();
-			int unk1 = packet.ReadByte();
-			ushort unk2 = packet.ReadShort();
-			uint price = packet.ReadInt();
+			int slot = marketPrice.Slot;
+			uint price = marketPrice.Price;
 
 			// ChatUtil.SendDebugMessage(client.Player, "PlayerSetMarketPriceHandler");
 

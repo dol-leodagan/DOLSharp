@@ -16,6 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.ObjectInteractRequest, "Handles Client Interact Request", eClientStatus.PlayerInGame)]
@@ -25,11 +29,12 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			// packet.Skip(10);
-			uint playerX = packet.ReadInt();
-			uint playerY = packet.ReadInt();
-			int sessionId = packet.ReadShort();
-			ushort targetOid = packet.ReadShort();
+		    var objectInteract = new ObjectInteractPacket(packet);
+		    
+			uint playerX = objectInteract.PlayerX;
+			uint playerY = objectInteract.PlayerY;
+			int sessionId = objectInteract.SessionId;
+			ushort targetOid = objectInteract.ObjectOid;
 
             //TODO: utilize these client-sent coordinates to possibly check for exploits which are spoofing position packets but not spoofing them everywhere
 			new InteractActionHandler(client.Player, targetOid).Start(1);

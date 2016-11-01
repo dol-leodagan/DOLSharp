@@ -18,6 +18,8 @@
  */
 using System;
 
+using DOL.GS.ClientPacket;
+
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.CreateNPCRequest, "Handles requests for npcs(0x72) in game", eClientStatus.PlayerInGame)]
@@ -25,7 +27,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 	{
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort id = packet.ReadShort();
+		    var createPacket = new CreateNPCPacket(packet);
+		    
+			ushort id = createPacket.ObjectOid;
 //			GameNPC npc = (GameNPC)WorldMgr.GetObjectTypeByIDFromRegion(client.Player.CurrentRegionID, id, typeof(GameNPC));
 			if(client.Player==null) return;
 			Region region = client.Player.CurrentRegion;

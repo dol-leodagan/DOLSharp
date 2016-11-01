@@ -23,8 +23,11 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+
 using DOL.Database;
 using DOL.GS.ServerProperties;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -80,95 +83,23 @@ namespace DOL.GS.PacketHandler.Client.v168
 			if (client == null)
 				return;
 
+			LoginRequestPacket loginPacket;
+			if (client.Version >= GameClient.eClientVersion.Version1115)
+			    loginPacket = new LoginRequestPacket_1115(packet);
+			else if (client.Version >= GameClient.eClientVersion.Version1104)
+			    loginPacket = new LoginRequestPacket_1104(packet);
+			else if (client.Version >= GameClient.eClientVersion.Version174)
+			    loginPacket = new LoginRequestPacket_174(packet);
+			else
+			    loginPacket = new LoginRequestPacket(packet);
+			
 			string ipAddress = client.TcpEndpointAddress;
 
-			byte major;
-			byte minor;
-			byte build;
-			string password;
-			string userName;
-			
-			/// <summary>
-			/// Packet Format Change above 1.115
-			/// </summary>
-			
-			if (client.Version < GameClient.eClientVersion.Version1115)
-			{
-				packet.Skip(2); //Skip the client_type byte
-				
-				major = (byte)packet.ReadByte();
-				minor = (byte)packet.ReadByte();
-				build = (byte)packet.ReadByte();
-				password = packet.ReadString(20);
-				
-				
-				bool v174;
-				//the logger detection we had is no longer working
-				//bool loggerUsing = false;
-				switch (client.Version)
-				{
-					case GameClient.eClientVersion.Version168:
-					case GameClient.eClientVersion.Version169:
-					case GameClient.eClientVersion.Version170:
-					case GameClient.eClientVersion.Version171:
-					case GameClient.eClientVersion.Version172:
-					case GameClient.eClientVersion.Version173:
-						v174 = false;
-						break;
-					default:
-						v174 = true;
-						break;
-				}
-	
-				if (v174)
-				{
-					packet.Skip(11);
-				}
-				else
-				{
-					packet.Skip(7);
-				}
-	
-				uint c2 = packet.ReadInt();
-				uint c3 = packet.ReadInt();
-				uint c4 = packet.ReadInt();
-	
-				if (v174)
-				{
-					packet.Skip(27);
-				}
-				else
-				{
-					packet.Skip(31);
-				}
-	
-				userName = packet.ReadString(20);
-			}
-			else
-			{
-				// 1.115c+
-				
-				// client type
-				packet.Skip(1);
-				
-				//version
-				major = (byte)packet.ReadByte();
-				minor = (byte)packet.ReadByte();
-				build = (byte)packet.ReadByte();
-				
-				// revision
-				packet.Skip(1);
-				// build
-				packet.Skip(2);
-				
-				// Read Login
-				userName = packet.ReadLowEndianShortPascalString();
-
-				// Read Password
-				password = packet.ReadLowEndianShortPascalString();
-			}
-
-
+			byte major = loginPacket.ClientVersionMajor;
+			byte minor = loginPacket.ClientVersionMinor;
+			byte build = loginPacket.ClientVersionBuild;
+			string password = loginPacket.Password;
+			string userName = loginPacket.AccountName;
 			
 			/*
 			if (c2 == 0 && c3 == 0x05000000 && c4 == 0xF4000000)

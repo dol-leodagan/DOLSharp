@@ -16,7 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 using System.Reflection;
+
 using DOL.Database;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -31,6 +34,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
+		    var overview = client.Version >= GameClient.eClientVersion.Version177
+		        ? new CharacterOverviewPacket_177(packet)
+		        : new CharacterOverviewPacket(packet);
+		    
 			client.ClientState = GameClient.eClientState.CharScreen;
 			if (client.Player != null)
 			{
@@ -66,7 +73,7 @@ namespace DOL.GS.PacketHandler.Client.v168
 				client.Account.Realm = (int)eRealm.None;
 			}
 
-			string accountName = packet.ReadString(24);
+			string accountName = overview.AccountName;
 
 			if(accountName.EndsWith("-X")) 
 			{

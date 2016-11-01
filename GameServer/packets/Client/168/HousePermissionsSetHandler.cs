@@ -16,8 +16,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
+using System;
+
 using DOL.Database;
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -28,9 +31,10 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int level = packet.ReadByte();
-			int unk1 = packet.ReadByte();
-			ushort housenumber = packet.ReadShort();
+		    var permPacket = new HousePermissionSetPacket(packet);
+		    
+			int level = permPacket.Level;
+			ushort housenumber = permPacket.HouseOid;
 
 			// make sure permission level is within bounds
 			if (level < HousingConstants.MinPermissionLevel || level > HousingConstants.MaxPermissionLevel)
@@ -52,21 +56,20 @@ namespace DOL.GS.PacketHandler.Client.v168
 			// read in the permission values
 			DBHousePermissions permission = house.PermissionLevels[level];
 
-			permission.CanEnterHouse = (packet.ReadByte() != 0);
-			permission.Vault1 = (byte) packet.ReadByte();
-			permission.Vault2 = (byte) packet.ReadByte();
-			permission.Vault3 = (byte) packet.ReadByte();
-			permission.Vault4 = (byte) packet.ReadByte();
-			permission.CanChangeExternalAppearance = (packet.ReadByte() != 0);
-			permission.ChangeInterior = (byte) packet.ReadByte();
-			permission.ChangeGarden = (byte) packet.ReadByte();
-			permission.CanBanish = (packet.ReadByte() != 0);
-			permission.CanUseMerchants = (packet.ReadByte() != 0);
-			permission.CanUseTools = (packet.ReadByte() != 0);
-			permission.CanBindInHouse = (packet.ReadByte() != 0);
-			permission.ConsignmentMerchant = (byte) packet.ReadByte();
-			permission.CanPayRent = (packet.ReadByte() != 0);
-			int unk2 = (byte) packet.ReadByte();
+			permission.CanEnterHouse = permPacket.Enter != 0;
+			permission.Vault1 = permPacket.Vault1;
+			permission.Vault2 = permPacket.Vault2;
+			permission.Vault3 = permPacket.Vault3;
+			permission.Vault4 = permPacket.Vault4;
+			permission.CanChangeExternalAppearance = permPacket.Appearance != 0;
+			permission.ChangeInterior = permPacket.Interior;
+			permission.ChangeGarden = permPacket.Garden;
+			permission.CanBanish = permPacket.Banish != 0;
+			permission.CanUseMerchants = permPacket.UseMerchant != 0;
+			permission.CanUseTools = permPacket.Tools != 0;
+			permission.CanBindInHouse = permPacket.Bind != 0;
+			permission.ConsignmentMerchant = permPacket.ConsignmentMerchant;
+			permission.CanPayRent = permPacket.PayRent != 0;
 
 			// save the updated permission
 			GameServer.Database.SaveObject(permission);

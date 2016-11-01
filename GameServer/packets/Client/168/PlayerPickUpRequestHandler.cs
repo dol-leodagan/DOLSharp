@@ -17,9 +17,9 @@
  *
  */
 using System;
-using System.Collections;
+
 using DOL.Language;
-using DOL.GS;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -30,10 +30,13 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			if (client.Player == null)
 				return;
-			uint X = packet.ReadInt();
-			uint Y = packet.ReadInt();
-			ushort id =(ushort) packet.ReadShort();
-			ushort obj=(ushort) packet.ReadShort();
+			
+			var pickupPacket = new PickUpRequestPacket(packet);
+			
+			uint X = pickupPacket.PlayerX;
+			uint Y = pickupPacket.PlayerY;
+			ushort id = pickupPacket.SessionId;
+			ushort obj = pickupPacket.Flag;
 
 			GameObject target = client.Player.TargetObject;
 			if (target == null)

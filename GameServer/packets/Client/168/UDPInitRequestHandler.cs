@@ -17,23 +17,19 @@
  *
  */
 using System;
-using System.Reflection;
-using log4net;
+
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
 	[PacketHandlerAttribute(PacketHandlerType.UDP, eClientPackets.UDPInitRequest, "Handles UDP init", eClientStatus.None)]
 	public class UDPInitRequestHandler : IPacketHandler
 	{
-		/// <summary>
-		/// Defines a logger for this class.
-		/// </summary>
-		private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			string localIP = packet.ReadString(22);
-			ushort localPort = packet.ReadShort();
+		    var UDPRequest = new UDPInitRequestPacket(packet);
+			string localIP = UDPRequest.ClientIP;
+			ushort localPort = UDPRequest.ClientPort;
 			client.LocalIP = localIP;
 			client.Out.SendUDPInitReply();
 		}

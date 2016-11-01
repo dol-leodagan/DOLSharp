@@ -21,11 +21,14 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
+
 using DOL.Events;
 using DOL.GS.Housing;
 using DOL.GS.Keeps;
 using DOL.GS.ServerProperties;
 using DOL.Language;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -42,6 +45,8 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
+		    //var initPacket = new WorldInitRequestPacket(packet);
+		    
 			new PlayerInitRequestAction(client.Player).Start(1);
 		}
 

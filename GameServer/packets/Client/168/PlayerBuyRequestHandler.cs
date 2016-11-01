@@ -18,8 +18,10 @@
  */
 using System;
 using System.Reflection;
-using DOL.Database;
+
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -36,13 +38,15 @@ namespace DOL.GS.PacketHandler.Client.v168
 		{
 			if (client.Player == null)
 				return;
+			
+			var buyPacket = new BuyItemPacket(packet);
 
-			uint X = packet.ReadInt();
-			uint Y = packet.ReadInt();
-			ushort id = packet.ReadShort();
-			ushort item_slot = packet.ReadShort();
-			byte item_count = (byte)packet.ReadByte();
-			byte menu_id = (byte)packet.ReadByte();
+			uint X = buyPacket.PlayerX;
+			uint Y = buyPacket.PlayerY;
+			ushort id = buyPacket.SessionId;
+			ushort item_slot = buyPacket.Slot;
+			byte item_count = buyPacket.Quantity;
+			byte menu_id = buyPacket.WindowType;
 
 			switch ((eMerchantWindowType)menu_id)
 			{

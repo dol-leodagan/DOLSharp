@@ -17,13 +17,10 @@
  *
  */
 using System;
-using System.Reflection;
 using System.Linq;
 
 using DOL.Database;
-using DOL.Events;
-
-using log4net;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -33,17 +30,16 @@ namespace DOL.GS.PacketHandler.Client.v168
 	[PacketHandlerAttribute(PacketHandlerType.TCP, eClientPackets.CharacterDeleteRequest, "Handles character delete requests", eClientStatus.LoggedIn)]
 	public class CharacterDeleteRequestHandler : IPacketHandler
 	{
-		private static readonly ILog Log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			string charName = packet.ReadString(30);
+		    var deleteChar = new CharacterDeletePacket(packet);
+
 			DOLCharacters[] chars = client.Account.Characters;
 
 			if (chars == null)
 				return;
 			
-			var foundChar = chars.FirstOrDefault(ch => ch.Name.Equals(charName, StringComparison.OrdinalIgnoreCase));
+			var foundChar = chars.FirstOrDefault(ch => ch.Name.Equals(deleteChar.CharacterName, StringComparison.OrdinalIgnoreCase));
 			
 			if (foundChar != null)
 			{

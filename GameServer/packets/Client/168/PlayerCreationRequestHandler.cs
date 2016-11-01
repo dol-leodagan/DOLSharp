@@ -18,6 +18,9 @@
  */
 using System;
 using System.Reflection;
+
+using DOL.GS.ClientPacket;
+
 using log4net;
 
 namespace DOL.GS.PacketHandler.Client.v168
@@ -32,7 +35,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			ushort id = packet.ReadShort();
+		    var createPlayer = new CreateOtherPlayerPacket(packet);
+		    
+			ushort id = createPlayer.SessionId;
 			GameClient target = WorldMgr.GetClientFromID(id);
 			if(target==null)
 			{

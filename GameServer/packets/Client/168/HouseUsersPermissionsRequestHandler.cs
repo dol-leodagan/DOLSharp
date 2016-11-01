@@ -16,8 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-using DOL.Database;
+using System;
+
 using DOL.GS.Housing;
+using DOL.GS.ClientPacket;
 
 namespace DOL.GS.PacketHandler.Client.v168
 {
@@ -28,9 +30,9 @@ namespace DOL.GS.PacketHandler.Client.v168
 
 		public void HandlePacket(GameClient client, GSPacketIn packet)
 		{
-			int unk1 = packet.ReadByte();
-			int unk2 = packet.ReadByte();
-			ushort houseNumber = packet.ReadShort();
+		    var permUser = new HouseUserPermissionRequestPacket(packet);
+
+			ushort houseNumber = permUser.HouseOid;
 
 			// house is null, return
 			var house = HouseMgr.GetHouse(houseNumber);
